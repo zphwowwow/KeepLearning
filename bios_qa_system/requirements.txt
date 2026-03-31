@@ -1,0 +1,15 @@
+torch>=2.0.0
+transformers>=4.35.0
+peft>=0.6.0
+accelerate>=0.24.0
+sentence-transformers>=2.2.2
+chromadb>=0.4.18
+pymupdf>=1.23.0
+paddleocr>=2.7.0
+paddlepaddle>=2.5.0
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+tqdm>=4.65.0
+numpy>=1.24.0
