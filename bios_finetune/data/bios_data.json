@@ -1,0 +1,722 @@
+[
+  {
+    "instruction": "什么是电脑的 BIOS？它的主要功能有哪些？",
+    "output": "BIOS 是英文“Basic Input Output System”的缩写，即“基本输入输出系统”。它是一组固化在计算机主板上一个 ROM 芯片里的程序，是计算机开机时运行的第一个软件。其主要功能包括：1. **加电自检（POST）**：检测关键硬件（如 CPU、内存、显卡等）是否正常工作，如果发现故障，会通过屏幕提示或蜂鸣声报警；2. **硬件初始化**：为硬件分配中断号、设置寄存器等，使其为操作系统做好准备；3. **引导操作系统**：根据设置好的启动顺序，从硬盘、U盘等设备中读取并加载操作系统的引导程序；4. **提供底层硬件控制**：为操作系统和应用程序提供与硬件交互的最底层接口。[reference:0][reference:1][reference:2]"
+  },
+  {
+    "instruction": "BIOS 和 UEFI 有什么区别？",
+    "output": "UEFI（统一可扩展固件接口）是 BIOS 的继任者，旨在解决传统 BIOS 的诸多限制，主要在以下方面有显著区别：1. **架构与性能**：传统 BIOS 用 16 位汇编语言编写，运行在实模式下，仅能访问 1MB 内存；而 UEFI 是 32/64 位的高级语言程序，能突破内存限制，理论寻址空间极大，且支持并行处理，启动速度更快[reference:3]。2. **用户界面**：BIOS 多为蓝白两色的纯文字界面，只能使用键盘操作；UEFI 则提供了图形化界面，并支持鼠标操作，更加直观[reference:4]。3. **硬盘与分区**：传统 BIOS 使用 MBR 分区表，最大支持 2TB 硬盘；UEFI 则使用 GPT 分区表，支持 2TB 以上的大容量硬盘，并且理论上支持的操作系统也更多[reference:5]。4. **功能与安全性**：UEFI 引入了安全启动（Secure Boot）机制，可以防止未经授权的操作系统或恶意软件在启动过程中加载，大大增强了系统安全性[reference:6]。如今，绝大多数新出厂的电脑都已默认采用 UEFI 模式，但通常会提供兼容传统 BIOS 的 Legacy 模式来支持旧硬件和软件[reference:7]。"
+  },
+  {
+    "instruction": "电脑开机时，如何进入 BIOS 设置界面？",
+    "output": "通常在电脑开机后，在显示品牌 Logo 或自检信息时，需要按下特定的热键才能进入 BIOS。不同品牌电脑的热键可能不同，常见的有：**Del（Delete）**、**F2**、**F10**、**F1**、**Esc**。具体操作是：开机后立即连续敲击对应热键（如每秒1-2次），直到进入设置界面。以下是部分品牌常用的热键：- **华硕、微星、技嘉**主板：多为 `Del` 或 `F2`；- **联想**台式机：多为 `F1`；- **惠普、戴尔**：多为 `F10` 或 `F2`。如果因系统开启了“快速启动”功能无法进入，可以在系统里关闭该功能，或者在开机时同时按住 `Shift` 键并点击重启，进入高级启动选项后选择“UEFI 固件设置”。[reference:8][reference:9][reference:10]"
+  },
+  {
+    "instruction": "电脑开机后，直接进入 BIOS 界面，无法进入 Windows 系统，是什么原因？如何解决？",
+    "output": "这种情况通常是 BIOS 找不到可引导的操作系统。常见原因及解决方法如下：1. **启动顺序错误**：BIOS 中的“Boot Sequence”（启动顺序）可能把 U 盘、网络等非系统盘设为了第一启动项。**解决方法**：进入 `Boot` 选项，将安装了 Windows 的硬盘（如 `Internal HDD` 或 `SSD`）设置为第一启动项[reference:11]。2. **硬盘未被识别**：系统盘可能接触不良或损坏，BIOS 检测不到它。**解决方法**：在 BIOS 的储存装置信息中确认是否能识别到硬盘[reference:12]。如果无法识别，建议关机后重新插拔或更换硬盘。3. **引导模式不匹配**：BIOS 的启动模式（`Boot Mode`）可能错误。例如，Windows 安装在 UEFI+GPT 模式下，而 BIOS 却错误地设置成了 Legacy 模式。**解决方法**：根据你的系统安装方式，在 BIOS 中正确设置启动模式[reference:13]。4. **外接设备冲突**：某些外接的 USB 设备（如 U 盘、外置硬盘）可能会干扰启动过程。**解决方法**：移除所有不必要的外接设备后重启[reference:14]。如果上述方法无效，可以尝试“加载优化默认值”（Load Optimized Defaults）后重启，这能将 BIOS 恢复至出厂状态。[reference:15]"
+  },
+  {
+    "instruction": "如何刷新或更新主板的 BIOS？有哪些注意事项？",
+    "output": "BIOS 更新能带来新硬件支持、性能优化和安全修复。更新前需知：更新失败可能导致电脑无法启动，因此非必要不更新[reference:16]。以下是通用更新步骤：**1. 准备工作**：从主板官方网站下载对应型号的 BIOS 文件，并将文件（通常需要解压）复制到一个格式化为 FAT32 的 U 盘中[reference:17]。**2. 更新方法**：重启电脑进入 BIOS，找到更新工具（如 ASUS 的 EZ Flash、MSI 的 M-FLASH），选择 U 盘中的 BIOS 文件进行更新[reference:18]。许多新款主板也支持在 Windows 下使用官方工具更新，或在开机时按特定热键（如 F12）进入启动菜单并选择“BIOS Flash Update”[reference:19]。**3. 重要注意事项**：- 更新过程中**绝对不要断电或强制重启**[reference:20]；- 不建议将 BIOS 降级到较旧版本[reference:21]；- 如果启用了 BitLocker 加密，建议先暂停保护并备份恢复密钥[reference:22]；- 更新完成后，建议进入 BIOS 载入“优化默认值”（Load Optimized Defaults）并保存退出，以确保所有新设置生效[reference:23]。"
+  },
+  {
+    "instruction": "电脑时间每次关机后都会重置，无法保存 BIOS 设置，怎么办？",
+    "output": "这个问题通常是主板上的 **CMOS 电池**电量耗尽了。BIOS 设置和系统时间都存储在一小块由电池供电的 CMOS 存储器中。当电池没电，这些信息就会在断电后丢失。**解决方法**：1. 购买一颗型号为 **CR2032** 的纽扣电池（价格通常很便宜）；2. 打开电脑机箱，在主板上找到银色圆形纽扣电池（CR2032），用指甲或小工具轻轻拨开金属卡扣将其取出；3. 将新电池按正负极方向（通常“+”号朝上）装入电池槽；4. 重新开机，进入 BIOS 重新设置好系统时间和其它自定义选项，并保存退出即可。更换电池后，问题通常会立即解决。[reference:24]"
+  },
+  {
+    "instruction": "BIOS 中的 Secure Boot 安全启动选项是什么？有什么作用？",
+    "output": "Secure Boot 是 UEFI 的一个安全功能，旨在防止恶意软件在操作系统加载前启动。它通过数字签名验证来工作：电脑启动时，Secure Boot 会检查引导加载程序（如 Windows Boot Manager）是否拥有由 BIOS 信任的数据库签发的有效数字签名。如果签名有效且未被篡改，启动过程才能继续；否则，BIOS 将阻止该程序的运行。这能有效防御 Rootkit 等针对启动过程的固件级攻击。**常见应用场景**：- 大多数预装 Windows 8/10/11 的品牌电脑默认开启此功能；- 如果你需要从 U 盘启动（例如安装 Linux）或启动旧版硬件，可能需要临时在 BIOS 的 `Security` 选项里将其关闭。但为了系统安全，安装完新系统后建议重新开启。[reference:25][reference:26]"
+  },
+  {
+    "instruction": "我想给电脑重装系统，如何在 BIOS 中设置从 U 盘启动？",
+    "output": "要在 BIOS 中设置从 U 盘启动，步骤如下：**1. 制作启动 U 盘**：首先你需要一个制作好的系统安装 U 盘。将其插入电脑。**2. 进入 BIOS**：重启电脑，在开机时按对应的热键（如 Del, F2, F10 等）进入 BIOS 设置界面。**3. 修改启动顺序**：- 找到名为 `Boot`、`Startup` 或 `Boot Sequence` 的菜单。在启动顺序列表（Boot Priority）中，找到你的 U 盘（通常显示为 USB HDD、UEFI: USB Hard Drive 或品牌名），使用 `+/-` 键或 F5/F6 键将其移动到第一的位置[reference:27]。**4. 保存并退出**：按 `F10` 键（或找到 `Save & Exit` 选项）保存设置并重启。电脑会自动从 U 盘启动。**快捷方式**：许多新电脑支持“一次性启动菜单”，开机时按 `F12` 或 `F11` 键，在弹出的启动项列表中直接选择 U 盘即可临时启动，这不会改变 BIOS 的永久设置。[reference:28][reference:29]"
+  },
+  {
+    "instruction": "什么是 BIOS 的 POST（加电自检）？如何通过蜂鸣声判断硬件故障？",
+    "output": "POST 是“Power-On Self-Test”的缩写，意为“加电自检”。这是 BIOS 在电脑开机后执行的首要任务。它会快速检查电脑的关键核心硬件（如 CPU、内存、显卡）是否存在故障。如果自检通过，通常会发出一声短促的“嘀”声，然后继续启动系统[reference:30]。如果检测到严重故障，BIOS 会通过屏幕显示错误信息，或通过主板上的一个小扬声器发出一系列特定规律的长短蜂鸣声来报警。这些“蜂鸣代码”可以帮助判断问题所在，但不同 BIOS 厂商（如 AMI, Award）的代码含义略有不同，常见的有：- **1 长 2 短**：通常表示显卡或显示器检测失败；- **不断长响**：通常表示内存条未插好或损坏；- **1 长 3 短**：通常表示键盘控制器故障。[reference:31]具体的蜂鸣代码含义可以查阅主板说明书。"
+  },
+  {
+    "instruction": "我想开启或关闭 Intel VT-x/AMD-V 虚拟化技术，应该如何在 BIOS 中操作？",
+    "output": "开启虚拟化技术能提升虚拟机（如 VMware、VirtualBox）的性能。不同厂商的 BIOS 名称略有不同：Intel 平台叫 **VT-x** 或 **Intel Virtualization Technology**；AMD 平台叫 **AMD-V** 或 **SVM Mode**。操作步骤如下：1. 重启电脑并进入 BIOS 设置。2. 找到高级设置菜单，通常名为 `Advanced`、`Configuration` 或 `CPU Configuration`。3. 在高级菜单中找到虚拟化技术的开关选项（如 `Intel Virtualization Technology`）。4. 将状态从 `Disabled` 更改为 `Enabled`[reference:32]。5. 按 `F10` 保存设置并退出。电脑重启后，该功能便已启用。**注意**：- 确保你的 CPU 支持此功能（近十年的 CPU 基本都支持）；- 如果 BIOS 中找不到该选项，可能需要先关闭 `Secure Boot`；- 在 Windows 系统中，如果使用了 Windows 沙盒或 WSL2，此功能通常是必需的。[reference:33]"
+  },
+  {
+    "instruction": "什么是 XMP 或 DOCP？如何在 BIOS 中开启？",
+    "output": "XMP（Intel 平台）和 DOCP（AMD 平台）是一种一键超频内存的技术。高频率内存（如 DDR4 3200MHz, DDR5 6000MHz）买回来后，插在主板上默认可能只以较低的 JEDEC 标准频率（如 2133MHz 或 4800MHz）运行，没有发挥其标称性能。开启 XMP/DOCP 就是为了让内存运行在其官方标称的、更快的速度上。操作步骤如下：1. 进入 BIOS 设置。2. 找到超频或 AI Tweaker 菜单，通常在 `Extreme Tweaker`、`OC` 或 `AI Tweaker` 选项中。3. 找到 `XMP` 或 `DOCP` 选项，默认状态是 `Disabled`。将其设置为 `Profile 1` 或 `Enabled`，BIOS 就会自动读取内存条中预存的一套更快的时序和电压配置。4. 按 `F10` 保存并退出。电脑会尝试用新的内存配置启动。如果开机失败（如黑屏后反复重启），主板通常会自行恢复默认设置。内存超频的成功与否，也受 CPU 内存控制器的体质影响。[reference:34]"
+  },
+  {
+    "instruction": "如何清除 BIOS 或 CMOS 的设置，将其恢复为出厂默认状态？",
+    "output": "当 BIOS 设置不当导致无法启动，或忘记了 BIOS 密码时，可以将 CMOS 设置重置为出厂状态。主要有三种方法：**方法一：加载优化默认值（最安全）**：如果能进入 BIOS，在 `Save & Exit` 或 `Exit` 菜单中，选择 `Load Optimized Defaults` 或 `Load Setup Defaults`，然后保存退出。**方法二：清除 CMOS 跳线**：关机并拔掉电源线，打开机箱，在主板上找到名为 `CLR_CMOS`、`CLEAR` 或 `JBAT1` 的跳线。用跳线帽将两个针脚短接约 5-10 秒，然后恢复原位[reference:35]。**方法三：移除 CMOS 电池**：关机并拔掉电源线，找到主板上的 CR2032 纽扣电池，将其取出。等待 10-15 分钟（或短接电池座正负极），让主板的电容耗尽电量，从而清除设置。之后装回电池即可[reference:36]。完成后，电脑会恢复出厂状态，重新开机时可能需要按 `F1` 进入 BIOS 并重新设置时间。"
+  },
+  {
+    "instruction": "我的电脑总是自动开机，如何关闭这个功能？",
+    "output": "电脑自动开机通常是 BIOS 中的某些唤醒功能被启用了。可以在 BIOS 中进行检查并关闭。进入 BIOS 设置，找到与电源管理相关的菜单，通常名为 `Power`、`APM Configuration` 或 `ACPI Settings`。你需要检查并关闭以下几种设置：1. **RTC 唤醒**：找到 `Wake Up on Alarm` 或 `RTC Alarm` 选项，将其设置为 `Disabled`。它可能在设定好的时间自动唤醒电脑[reference:37]。2. **网络唤醒**：找到 `Wake on LAN` 或 `PME Event Wake Up` 选项，将其设置为 `Disabled`。这可以让电脑在接收到特定网络信号时开机[reference:38]。3. **USB/键盘/鼠标唤醒**：找到 `USB Wake Support`、`Wake on USB`、`Wake on PS/2 Keyboard/Mouse` 等选项，将它们设置为 `Disabled`。这会防止电脑因误触鼠标或键盘而开机。4. **断电后状态**：找到 `After Power Loss` 或 `State After G3` 选项，将其设置为 `Power Off` 而非 `Last State` 或 `Power On`，以确保在意外断电并恢复供电时，电脑不会自动启动[reference:39]。设置完成后按 `F10` 保存退出即可。"
+  },
+  {
+    "instruction": "电脑开机后提示 CPU Fan Error 或 CPU 过热警告，该怎么办？",
+    "output": "这个提示意味着 BIOS 在开机自检时检测到 CPU 风扇异常或 CPU 温度过高，主要是一种保护机制。可以按以下步骤排查：1. **检查风扇物理连接**：关机并断开电源，打开机箱，确认 CPU 风扇的电源线是否牢固地插在主板的 `CPU_FAN` 接口上，而非 `SYS_FAN` 接口，因为 `CPU_FAN` 接口才有转速监控功能。2. **检查风扇运转**：开机时肉眼观察 CPU 风扇是否正常旋转。如果完全不转或转动困难，说明风扇可能已损坏，需要更换。3. **检查散热系统**：如果风扇正常但温度高，可能是硅脂干涸或散热器安装不当。建议清理 CPU 和散热器上的旧硅脂，重新涂抹新硅脂并正确安装散热器。4. **调整 BIOS 设置**：如果确定风扇正常，但 BIOS 检测过于敏感，可以尝试进入 BIOS，在监控菜单（`Monitor`、`Hardware Health`）中找到 `CPU Fan Speed Low Limit` 选项，将其设置为 `Ignore` 来忽略这个警告。但这仅是临时措施，应首先排查硬件问题。**特别提示**：如果开机直接提示“CPU Over Temperature Error”，则必须立即关机检查散热，否则可能损坏 CPU。[reference:40]"
+  },
+  {
+    "instruction": "什么是 BIOS 的 Legacy 启动模式？在什么情况下需要用到它？",
+    "output": "Legacy 启动模式，即传统 BIOS 启动模式。它是 UEFI 出现之前的旧标准，使用 16 位实模式、MBR 分区表和 INT 13 中断来读取磁盘，每次只能读取 64KB 数据，效率较低，且最大仅支持 2TB 硬盘[reference:41]。虽然效率不高，但在以下特定场景下依然需要 Legacy 模式：1. **运行旧版操作系统**：如 Windows 7 及更早版本的系统，它们本身不支持 UEFI 启动。2. **使用特定维护工具**：一些基于 DOS 或旧版 Linux 内核的 PE 启动盘或硬件检测工具可能无法在 UEFI 模式下启动。3. **兼容旧硬件**：某些老旧的 PCI 扩展卡，其 Option ROM 不兼容 UEFI。4. **硬盘使用 MBR 分区表**：如果你的系统硬盘已经使用了 MBR 分区表（而非 GPT），并且不想重装系统，那么必须在 BIOS 中启用 Legacy 模式才能正常启动。你可以在 BIOS 的 `Boot` 或 `Startup` 菜单中找到 `Boot Mode` 选项，将其设置为 `Legacy` 或 `Legacy Support`。需要注意的是，启用 Legacy 模式通常意味着需要关闭 `Secure Boot`。[reference:42][reference:43]"
+  },
+    {
+    "instruction": "如何查看当前BIOS的版本号？",
+    "output": "查看BIOS版本有多种方法：\n1. **开机自检画面**：开机时按Pause键暂停画面，通常能看到BIOS版本信息。\n2. **进入BIOS界面**：按Del/F2进入BIOS，通常在Main或System Information页面可以看到BIOS Version。\n3. **Windows系统信息**：按Win+R输入msinfo32，在“系统摘要”中查看BIOS版本/日期。\n4. **命令提示符**：以管理员身份运行cmd，输入 `wmic bios get smbiosbiosversion`。\n5. **第三方软件**：如CPU-Z，在Mainboard选项卡中查看BIOS版本。"
+  },
+  {
+    "instruction": "什么是BIOS的Beep Code（蜂鸣代码）？常见的AMI BIOS蜂鸣代码含义是什么？",
+    "output": "Beep Code是BIOS在POST自检失败时通过主板蜂鸣器发出的一系列长短不一的响声，用于指示硬件故障。以AMI BIOS为例，常见代码含义：\n- **1短**：内存刷新失败，通常是内存条问题。\n- **2短**：内存ECC校验错误。\n- **3短**：系统基本内存（第一个64KB）检查失败。\n- **4短**：系统时钟出错。\n- **5短**：CPU错误。\n- **6短**：键盘控制器错误。\n- **7短**：虚拟模式异常。\n- **8短**：显示内存错误。\n- **9短**：ROM BIOS校验错误。\n- **10短**：CMOS读写错误。\n- **11短**：Cache内存错误。\n- **1长3短**：内存或显卡错误。\n- **持续长响**：内存未插好或损坏。\n不同BIOS厂商（如Award、Phoenix）代码含义不同，具体可参考主板说明书。"
+  },
+  {
+    "instruction": "如何在BIOS中开启或关闭CPU的虚拟化技术（VT-d/AMD-Vi）？",
+    "output": "VT-d（Intel）和AMD-Vi（AMD）是用于I/O设备虚拟化的技术，可提升虚拟机直通硬件的性能。开启方法：\n1. 进入BIOS，找到Advanced菜单。\n2. 寻找VT-d、Intel VT-d、SR-IOV或AMD-Vi、IOMMU等选项。\n3. 将其设置为Enabled。\n4. 保存退出。\n注意：VT-d通常需要CPU和主板同时支持。关闭这些选项可以解决某些虚拟机或操作系统的不兼容问题。如果不需要PCI直通功能，关闭它们不会影响日常使用。"
+  },
+  {
+    "instruction": "BIOS中的Fast Boot（快速启动）是什么？开启后有什么影响？",
+    "output": "Fast Boot是一种跳过部分自检流程以加快开机速度的功能。开启后，BIOS会省略内存完整性检测、某些外设初始化等步骤，直接从硬盘加载操作系统。\n**影响**：\n- 优点：开机速度显著提升，尤其是搭配SSD时。\n- 缺点：可能导致无法进入BIOS（因为按键检测时间窗口极短），且某些USB设备可能直到系统内才被识别。\n**解决方法**：若开启Fast Boot后无法进入BIOS，可在Windows中按住Shift重启，进入高级启动选项→疑难解答→UEFI固件设置。或者清除CMOS来恢复默认设置。"
+  },
+  {
+    "instruction": "我的电脑开机黑屏，但风扇在转，如何通过BIOS相关思路排查？",
+    "output": "开机黑屏但风扇转动，说明主板通电，但未完成POST。排查步骤：\n1. **检查显示器连接**：确认显示器电源和信号线（HDMI/DP/VGA）插紧，且显示器输入源正确。\n2. **最小化系统测试**：只保留CPU、一根内存、显卡（如果CPU无集显），拔掉所有硬盘、USB设备。尝试开机。\n3. **清除CMOS**：通过跳线或移除电池重置BIOS，排除错误设置导致的黑屏。\n4. **内存问题**：尝试更换内存插槽或使用橡皮擦擦拭内存金手指。\n5. **显卡问题**：若CPU有集显，拔掉独显接主板视频口测试。\n6. **BIOS芯片故障**：极少数情况BIOS芯片损坏，需编程器重刷。\n如果仍然黑屏且无蜂鸣声，可能是主板、CPU或电源故障。"
+  },
+  {
+    "instruction": "如何在BIOS中调整系统时间？",
+    "output": "进入BIOS设置界面，使用键盘方向键找到 `Main` 或 `System` 选项卡。可以看到 `System Date` 和 `System Time` 选项。\n- 按 `+` / `-` 键或 `Page Up` / `Page Down` 键调整数值。\n- 日期格式通常为月/日/年，时间格式为时:分:秒。\n- 修改完成后按 `F10` 保存并退出。\n注意：如果每次重启时间都会重置，说明主板CMOS电池没电了，需要更换CR2032电池。"
+  },
+  {
+    "instruction": "什么是BIOS的Secure Boot“安全启动”？它与TPM有什么关系？",
+    "output": "Secure Boot是UEFI的一项安全功能，确保只有经认证的引导加载程序可以启动系统，防止Rootkit和恶意软件劫持启动过程。TPM（可信平台模块）是一个独立的硬件安全芯片，用于存储加密密钥、进行平台完整性度量。\n**两者关系**：\n- Secure Boot侧重于启动过程中的代码签名验证，防止未授权程序运行。\n- TPM侧重于硬件级的密钥管理和系统完整性度量，常用于BitLocker加密、Windows Hello等。\n- 两者相辅相成：Windows 11要求同时支持Secure Boot和TPM 2.0，但它们是独立功能。Secure Boot可以在BIOS中单独开启/关闭，TPM也可单独启用。"
+  },
+  {
+    "instruction": "如何更新联想电脑的BIOS？",
+    "output": "联想电脑提供了多种BIOS更新方式：\n1. **使用Lenovo Vantage（推荐）**：在Windows应用商店安装Lenovo Vantage，打开后检查系统更新，它会自动下载并安装BIOS更新。\n2. **通过官网下载**：访问联想支持官网（support.lenovo.com），输入主机编号（SN），下载对应机型的BIOS更新程序（通常为.exe文件）。关闭所有程序后双击运行，按提示操作，过程中电脑会自动重启并进入BIOS刷新界面。\n3. **使用U盘刷新**：下载BIOS文件（通常是.cap或.rom），复制到FAT32格式的U盘根目录。开机按F12进入启动菜单，选择“BIOS Flash Update”选项，按提示选择U盘中的文件进行刷新。\n**注意事项**：更新时必须连接电源适配器（笔记本），不能断电；更新前关闭BitLocker加密；不建议降级BIOS。"
+  },
+  {
+    "instruction": "惠普电脑进入BIOS的热键是什么？如何从BIOS中开启虚拟化技术？",
+    "output": "惠普（HP）电脑进入BIOS的热键通常是 **F10** 或 **Esc**（按Esc后会进入启动菜单，再按F10）。部分型号也可能是F2。\n**开启虚拟化**：\n1. 开机按F10进入BIOS Setup。\n2. 选择 `Advanced` 选项卡（有些机型在 `Security` → `System Security`）。\n3. 找到 `Virtualization Technology (VTx)` 或 `AMD-V`。\n4. 将其设置为 `Enabled`。\n5. 如果还有 `Virtualization Technology for Directed I/O (VTd)`，按需开启。\n6. 按 `F10` 保存并退出。\n注意：HP商用笔记本（EliteBook、ProBook）的BIOS界面可能不同，但大致路径相似。"
+  },
+  {
+    "instruction": "如何在BIOS中设置硬盘模式为AHCI或RAID？它们有什么区别？",
+    "output": "进入BIOS，找到 `SATA Configuration` 或 `Storage` 菜单，可看到 `SATA Mode` 选项。通常有 **IDE**（旧模式）、**AHCI** 和 **RAID** 三种选择。\n**区别**：\n- **AHCI**：高级主机控制器接口，支持NCQ（原生命令队列）、热插拔，适合单硬盘系统，性能较好。\n- **RAID**：磁盘阵列模式，可将多块硬盘组合成RAID 0/1/5/10等，需要至少两块硬盘。也支持AHCI功能（如果仅单盘但开启RAID模式，通常性能无差异，但可能无法直接启动原有系统）。\n- **IDE**：兼容旧系统（如Windows XP），无AHCI特性，性能差，不推荐现代系统使用。\n**注意**：如果已在AHCI模式下安装了Windows，切换到RAID模式可能导致蓝屏（0x0000007B）。修改前建议先在Windows中进入安全模式或修改注册表（对于Win10/11，可在正常模式下以安全模式启动一次，让其自动加载驱动）。"
+  },
+  {
+    "instruction": "为什么我的电脑在BIOS中识别不到M.2 NVMe固态硬盘？",
+    "output": "M.2 NVMe硬盘在BIOS中不被识别，常见原因及解决方法：\n1. **接口不支持**：某些主板的M.2插槽仅支持SATA协议，不兼容NVMe。请查阅主板手册确认。\n2. **BIOS版本过旧**：旧版BIOS可能没有NVMe驱动，升级BIOS到最新版可解决。\n3. **通道冲突**：某些M.2插槽会与SATA端口或PCIe插槽共享带宽，如果使用了冲突的设备，M.2可能被禁用。尝试拔掉特定SATA硬盘或PCIe设备。\n4. **CSM/启动模式**：某些BIOS需要在Boot菜单中开启CSM（兼容性支持模块）或关闭Secure Boot才能识别NVMe硬盘。\n5. **硬盘故障**：更换到其他电脑测试硬盘是否正常。\n6. **插槽未启用**：在BIOS的 `Onboard Device Configuration` 中检查M.2插槽是否被设置为 `Enabled`。"
+  },
+  {
+    "instruction": "BIOS中的“CPU Core Ratio”或“倍频”如何调整？超频需要注意什么？",
+    "output": "CPU倍频（Multiplier）决定CPU主频 = 外频 × 倍频。在BIOS的 `OC` 或 `Ai Tweaker` 菜单中找到 `CPU Core Ratio`（Intel）或 `CPU Frequency`（AMD），可以手动设置倍频数值（如50表示5.0GHz）。\n**超频步骤**：\n1. 逐渐提高倍频（每次+1或+0.5）。\n2. 适当增加CPU核心电压（Vcore），以保持稳定。\n3. 保存退出，进入系统进行压力测试（如Prime95、AIDA64）。\n**注意事项**：\n- 只有带K后缀的Intel CPU（如i7-12700K）和所有AMD Ryzen CPU（除部分锁频型号）支持倍频超频。\n- 超频会增加功耗和发热，需要良好散热。\n- 过高电压可能损坏CPU。建议查阅安全电压范围。\n- 如果超频后无法开机，可清除CMOS恢复默认。"
+  },
+  {
+    "instruction": "如何在BIOS中设置电源管理模式（ACPI Suspend Type）？",
+    "output": "ACPI（高级配置与电源接口）定义了不同的睡眠状态。在BIOS的 `Power` 或 `ACPI Settings` 中可设置 `Suspend Type`：\n- **S1 (POS)**：CPU停止工作，但内存和部分设备保持供电，唤醒快，但功耗较高。\n- **S3 (STR)**：仅内存供电，其余设备关闭，功耗极低，唤醒较快，最常用。\n- **S4 (Hibernate)**：将内存内容写入硬盘，完全断电，唤醒较慢。\n通常建议设置为 `Auto` 或 `S3`。\n此外，还可以设置 `ACPI Sleep State` 允许操作系统管理睡眠。如果需要使用Windows的快速启动或休眠，需要在BIOS中启用相应的ACPI功能。"
+  },
+  {
+    "instruction": "什么是BIOS的“Resume by PCI/PCI-E”功能？如何关闭？",
+    "output": "Resume by PCI/PCI-E（也称为Wake-on-LAN或WOL）允许通过PCI或PCI-E设备（如网卡）发送信号来唤醒处于睡眠或关机状态的电脑。\n**关闭方法**：\n1. 进入BIOS，找到 `Power Management` 或 `APM Configuration`。\n2. 找到 `Resume by PCI/PCI-E`、`Wake on LAN` 或 `PME Event Wake Up`。\n3. 设置为 `Disabled`。\n**影响**：关闭后无法通过网络远程唤醒电脑。如果你从未使用此功能，关闭它可避免意外自动开机（如路由器广播导致误唤醒）。另外，Windows中的网卡驱动属性里也有 `允许此设备唤醒计算机` 选项，两者需同时设置才能生效。"
+  },
+  {
+    "instruction": "如何备份当前BIOS设置？刷新BIOS前如何保存原配置？",
+    "output": "备份BIOS设置的方法：\n1. **BIOS内置功能**：部分主板（如华硕、技嘉）在BIOS的 `Save & Exit` 菜单中有 `Save Profile` 选项，可以将当前所有设置保存到一个文件（如*.CMO）中，存储在U盘或硬盘。刷新BIOS后，可用 `Load Profile` 恢复。\n2. **第三方工具**：在Windows下可使用 `Intel Flash Programming Tool`（需主板支持）或 `AFUWIN`（AMI BIOS）等工具备份整个BIOS ROM。\n3. **手动记录**：用手机拍照或笔记录下自定义的设置项（如超频参数、风扇曲线、启动顺序）。\n**刷新前建议**：先加载 `Optimized Defaults` 并记录修改过的选项，再执行刷新。更新后重新手动设置或导入之前保存的Profile（注意：不同BIOS版本的Profile可能不兼容，跨版本导入可能引发问题，建议谨慎）。"
+  },
+  {
+    "instruction": "什么是BIOS？",
+    "output": "BIOS是Basic Input/Output System的缩写，即基本输入输出系统，是固化在主板ROM芯片上的固件，负责硬件初始化、自检和引导操作系统。"
+  },
+  {
+    "instruction": "如何进入BIOS设置？",
+    "output": "开机时按下特定热键，常见的有Del、F2、F10、F1、Esc。不同品牌可能不同：华硕/微星/技嘉通常按Del；联想台式机按F1；惠普/戴尔按F10或F2。"
+  },
+  {
+    "instruction": "BIOS和UEFI有什么区别？",
+    "output": "UEFI是BIOS的继任者，支持2TB以上硬盘、图形界面、鼠标操作、安全启动和更快启动速度。传统BIOS使用MBR分区表，仅支持2TB以下硬盘。"
+  },
+  {
+    "instruction": "什么是UEFI？",
+    "output": "UEFI是统一可扩展固件接口，是新一代主板固件标准，取代传统BIOS，提供图形界面、安全启动、大硬盘支持和更快的启动速度。"
+  },
+  {
+    "instruction": "BIOS电池没电会怎样？",
+    "output": "CMOS电池（CR2032）没电后，BIOS设置会丢失，系统时间每次关机后重置，开机可能提示CMOS checksum error。更换电池即可解决。"
+  },
+  {
+    "instruction": "如何重置BIOS到出厂设置？",
+    "output": "三种方法：1) 在BIOS内按F9或选择Load Optimized Defaults；2) 清除CMOS跳线；3) 拔掉主板上的CR2032电池等待几分钟后装回。"
+  },
+  {
+    "instruction": "BIOS中Secure Boot是什么？",
+    "output": "Secure Boot是UEFI的安全功能，通过数字签名验证启动加载程序，防止恶意软件在操作系统启动前加载。安装Linux或旧系统时可能需要关闭。"
+  },
+  {
+    "instruction": "如何开启虚拟化技术？",
+    "output": "进入BIOS，找到Advanced -> CPU Configuration，将Intel Virtualization Technology（VT-x）或AMD SVM Mode设置为Enabled，按F10保存退出。"
+  },
+  {
+    "instruction": "电脑开机提示CPU Fan Error怎么办？",
+    "output": "1) 检查CPU风扇电源线是否插在CPU_FAN接口；2) 观察风扇是否转动；3) 清理风扇灰尘；4) 若风扇正常可在BIOS中将CPU Fan Speed Low Limit设为Ignore。"
+  },
+  {
+    "instruction": "什么是XMP？",
+    "output": "XMP是Intel的内存超频技术，一键让内存运行在标称频率（如3200MHz）而非默认2133MHz。在BIOS的AI Tweaker或OC菜单中开启XMP Profile 1即可。"
+  },
+  {
+    "instruction": "AMD主板的DOCP是什么？",
+    "output": "DOCP是AMD平台对应Intel XMP的内存一键超频技术，功能相同，在BIOS的OC或Ai Tweaker菜单中开启即可让高频内存达到标称速度。"
+  },
+  {
+    "instruction": "BIOS中CSM是什么？",
+    "output": "CSM（兼容性支持模块）是UEFI BIOS中用于兼容传统Legacy启动和旧硬件的功能。安装Windows 7或使用旧显卡时需要开启CSM。"
+  },
+  {
+    "instruction": "如何设置U盘启动？",
+    "output": "1) 插入启动U盘；2) 进入BIOS；3) 找到Boot菜单，将U盘（USB HDD或UEFI: USB）设为第一启动项；4) 按F10保存。或开机按F12/F11选择一次性启动项。"
+  },
+  {
+    "instruction": "BIOS更新失败怎么办？",
+    "output": "若BIOS更新失败导致无法启动，可尝试：1) 使用主板自带的BIOS恢复功能（如华硕CrashFree）；2) 编程器刷写；3) 送修。更新时绝对不要断电。"
+  },
+  {
+    "instruction": "如何查看BIOS版本？",
+    "output": "方法1：开机进入BIOS，主界面显示版本号；方法2：Windows按Win+R输入msinfo32，查看BIOS版本/日期；方法3：使用CPU-Z等工具。"
+  },
+  {
+    "instruction": "BIOS密码忘记了怎么办？",
+    "output": "1) 清除CMOS（拔电池或短接跳线）；2) 尝试主板通用后门密码（如AMI、AWARD）；3) 联系主板厂商。清除CMOS是最可靠的方法。"
+  },
+  {
+    "instruction": "什么是POST自检？",
+    "output": "POST（Power-On Self-Test）是开机自检，BIOS在启动时检测CPU、内存、显卡等关键硬件，发现问题通过蜂鸣声或屏幕提示报警。"
+  },
+  {
+    "instruction": "电脑开机长鸣一声后没反应？",
+    "output": "通常表示内存故障。尝试重新插拔内存条，擦拭金手指，或更换插槽。如果还有问题，可能是内存损坏或不兼容。"
+  },
+  {
+    "instruction": "BIOS中VT-d是什么？",
+    "output": "VT-d是Intel的虚拟化输入输出技术，允许虚拟机直接访问硬件设备，提升I/O性能。在BIOS Advanced菜单中开启。"
+  },
+  {
+    "instruction": "如何关闭软驱检测？",
+    "output": "进入BIOS，找到Standard CMOS Features或Advanced，将Floppy Drive A设为None或Disabled，也可将Boot Up Floppy Seek设为Disabled。"
+  },
+  {
+    "instruction": "BIOS中的AHCI是什么？",
+    "output": "AHCI是高级主机控制器接口，支持SATA硬盘的热插拔和NCQ（原生指令队列），提升硬盘性能。安装Windows 7及以上系统建议开启。"
+  },
+  {
+    "instruction": "RAID模式怎么设置？",
+    "output": "进入BIOS，将SATA Mode设置为RAID，保存重启后按Ctrl+I或特定热键进入RAID配置界面，创建RAID 0/1/5/10阵列。"
+  },
+  {
+    "instruction": "什么是Legacy启动模式？",
+    "output": "Legacy模式是传统BIOS启动方式，使用MBR分区表，支持Windows 7及更早系统。现代电脑默认UEFI模式，安装旧系统需切换为Legacy。"
+  },
+  {
+    "instruction": "如何关闭开机Logo？",
+    "output": "进入BIOS，找到Boot菜单中的Full Screen Logo或Boot Logo Display，设为Disabled。部分主板可能需要开启Fast Boot才显示Logo。"
+  },
+  {
+    "instruction": "BIOS中CPU温度过高警告怎么处理？",
+    "output": "1) 检查CPU散热器是否安装到位；2) 重新涂抹硅脂；3) 清理灰尘；4) 改善机箱风道；5) 在BIOS中降低CPU电压或关闭超频。"
+  },
+  {
+    "instruction": "什么是UEFI启动顺序？",
+    "output": "UEFI启动顺序列表包括带UEFI前缀的设备（如UEFI: USB）和传统设备。UEFI模式需选择带UEFI前缀的设备才能正确启动GPT分区系统。"
+  },
+  {
+    "instruction": "如何更新BIOS？",
+    "output": "1) 下载主板官网对应型号的BIOS文件；2) 放入FAT32格式U盘；3) 进入BIOS使用EZ Flash/M-FLASH等工具；4) 选择文件更新；5) 更新过程切勿断电。"
+  },
+  {
+    "instruction": "BIOS中ErP是什么？",
+    "output": "ErP是欧盟节能指令，开启后关闭待机功耗，但会禁用网络唤醒、USB供电等功能。在BIOS Power或APM菜单中设置。"
+  },
+  {
+    "instruction": "电脑每次开机都进入BIOS？",
+    "output": "可能原因：1) 启动顺序错误；2) 硬盘未识别；3) 系统引导损坏；4) BIOS设置异常；5) CMOS电池没电。依次排查。"
+  },
+  {
+    "instruction": "BIOS中怎么调整风扇转速？",
+    "output": "进入BIOS的Hardware Monitor、PC Health或Q-Fan Control（华硕），可以设置风扇模式（PWM/DC）、转速曲线或智能风扇模式。"
+  },
+  {
+    "instruction": "什么是TPM？BIOS中如何开启？",
+    "output": "TPM是可信平台模块，用于安全加密和Windows 11系统要求。在BIOS的Security或Advanced菜单中找到TPM/PTT/fTPM，设为Enabled。"
+  },
+  {
+    "instruction": "BIOS中SR-IOV是什么？",
+    "output": "SR-IOV是单根输入输出虚拟化技术，允许虚拟机直接共享PCIe设备，提高网络和存储性能。在BIOS高级菜单中开启。"
+  },
+  {
+    "instruction": "如何禁用板载声卡？",
+    "output": "进入BIOS的Advanced或Onboard Devices，找到HD Audio或Azalia Audio，设为Disabled，保存后重启即可使用独立声卡。"
+  },
+  {
+    "instruction": "BIOS中Above 4G Decoding是什么？",
+    "output": "该选项允许在4GB以上地址空间解码PCIe设备，对多显卡和某些专业卡（如NVIDIA GeForce RTX 30系列）挖矿或深度学习配置时需要开启。"
+  },
+  {
+    "instruction": "什么是Resizable BAR？",
+    "output": "Resizable BAR是PCIe技术，允许CPU一次性访问全部显存，提升游戏性能。需BIOS支持、显卡驱动支持，通常在Advanced -> PCI Subsystem中开启。"
+  },
+  {
+    "instruction": "BIOS中SVM模式是什么？",
+    "output": "SVM是AMD的安全虚拟机技术，相当于Intel的VT-x，用于硬件虚拟化。启用后才能使用虚拟机、WSL2、沙盒等功能。"
+  },
+  {
+    "instruction": "电脑睡眠后无法唤醒？",
+    "output": "进入BIOS，检查Power Management中的Wake on USB/Wake on LAN是否开启，关闭深度睡眠（Deep Sleep）选项，更新主板驱动。"
+  },
+  {
+    "instruction": "如何禁用板载网卡？",
+    "output": "进入BIOS，找到Onboard LAN或Realtek LAN Controller，设为Disabled。禁用后网口失效，需使用独立网卡或WiFi。"
+  },
+  {
+    "instruction": "BIOS中M.2接口识别不到SSD？",
+    "output": "1) 确认M.2 SSD协议（NVMe或SATA）与主板插槽匹配；2) 更新BIOS；3) 检查CSM/UEFI模式；4) 检查PCIe通道分配冲突（如SATA接口占用）。"
+  },
+  {
+    "instruction": "什么是Intel SpeedStep？",
+    "output": "SpeedStep是Intel的动态频率调节技术，根据负载自动调整CPU频率和电压，省电降热。在BIOS Advanced CPU Configuration中可开关。"
+  },
+  {
+    "instruction": "BIOS中怎么查看硬盘？",
+    "output": "进入BIOS，在Storage、SATA Configuration或Boot菜单中，可以看到已连接的硬盘型号、容量和接口信息。"
+  },
+  {
+    "instruction": "如何关闭BIOS中的NumLock？",
+    "output": "进入BIOS，在Boot菜单中找到Boot NumLock State，设为Off。保存后开机小键盘灯不会自动亮起。"
+  },
+  {
+    "instruction": "BIOS中Intel Trusted Execution Technology是什么？",
+    "output": "TXT是Intel的可信执行技术，配合TPM和虚拟化技术提供安全启动环境。普通用户无需开启，可能引起兼容问题。"
+  },
+  {
+    "instruction": "如何设置BIOS管理员密码？",
+    "output": "进入Security菜单，选择Set Administrator Password或Supervisor Password，输入密码并确认。设置后需密码才能进入BIOS。"
+  },
+  {
+    "instruction": "BIOS中快速启动Fast Boot是什么？",
+    "output": "Fast Boot跳过部分自检和设备初始化，大幅缩短启动时间。开启后可能无法按热键进入BIOS，需通过系统重启进入UEFI设置。"
+  },
+  {
+    "instruction": "电脑总是自动开机？",
+    "output": "进入BIOS的Power菜单，关闭Wake on LAN、RTC Alarm、USB唤醒等功能。检查操作系统中的定时任务。"
+  },
+  {
+    "instruction": "BIOS中怎么调节CPU电压？",
+    "output": "在超频菜单（如OC、AI Tweaker）中找到CPU Core Voltage或Vcore，可手动设置偏移值或固定电压。注意过高会损坏CPU。"
+  },
+  {
+    "instruction": "什么是Dual BIOS？",
+    "output": "双BIOS设计，主板有两颗BIOS芯片，主BIOS损坏时可从备份恢复。通常在BIOS内或主板开关切换。"
+  },
+  {
+    "instruction": "BIOS更新后无法进入系统？",
+    "output": "1) 进入BIOS加载优化默认值；2) 检查启动模式和分区类型（UEFI/GPT或Legacy/MBR）是否匹配；3) 尝试系统修复；4) 回滚BIOS版本。"
+  },
+    {
+    "instruction": "什么是CMOS？",
+    "output": "CMOS是互补金属氧化物半导体，主板上用于存储BIOS设置的小容量存储器，由CR2032电池供电，断电后设置丢失。"
+  },
+  {
+    "instruction": "BIOS中的PnP是什么？",
+    "output": "PnP即即插即用，让操作系统自动配置硬件资源（IRQ、DMA、I/O地址），避免手动跳线。可在BIOS的PnP/PCI Configuration中设置。"
+  },
+  {
+    "instruction": "如何开启BIOS中的USB键盘支持？",
+    "output": "进入BIOS，找到Integrated Peripherals或USB Configuration，将USB Keyboard Support设为Enabled，确保DOS或BIOS界面下可使用USB键盘。"
+  },
+  {
+    "instruction": "什么是ACPI？",
+    "output": "ACPI是高级配置与电源接口，管理电源状态（S0-S5）、睡眠、休眠和关机。BIOS中的ACPI设置影响系统电源管理和唤醒功能。"
+  },
+  {
+    "instruction": "BIOS中的S3睡眠是什么？",
+    "output": "S3是ACPI定义的挂起到内存状态，除内存外大部分设备断电，唤醒速度快。在BIOS Power菜单中可启用或禁用S3。"
+  },
+  {
+    "instruction": "如何清除BIOS密码（跳线法）？",
+    "output": "关机断电，在主板上找到CLR_CMOS或CLEAR_PASSWORD跳线，将跳线帽从1-2移到2-3几秒后复位，或短接两个针脚。开机后密码清除。"
+  },
+  {
+    "instruction": "BIOS中的硬件监控怎么看？",
+    "output": "进入PC Health Status、Hardware Monitor或H/W Monitor，可查看CPU温度、主板温度、风扇转速、电压（+12V、+5V、Vcore等）。"
+  },
+  {
+    "instruction": "什么是BIOS的Boot Block？",
+    "output": "Boot Block是BIOS芯片中的保护区，即使刷新失败也能提供基本的启动能力，通常可以通过软驱或U盘恢复BIOS。"
+  },
+  {
+    "instruction": "如何强制进入BIOS（系统快速启动时）？",
+    "output": "按住Shift键同时点击重启，进入高级启动选项，选择疑难解答->高级选项->UEFI固件设置->重启，即可进入BIOS。"
+  },
+  {
+    "instruction": "BIOS中UEFI与Legacy启动区别？",
+    "output": "UEFI模式支持GPT分区、安全启动和2TB以上硬盘，启动快；Legacy模式支持MBR分区和旧系统。安装系统时两者需匹配。"
+  },
+  {
+    "instruction": "什么是Intel ME？BIOS中如何关闭？",
+    "output": "Intel ME是管理引擎，用于带外管理，普通用户无法完全关闭。部分主板可在BIOS的AMT或ME Configuration中禁用部分功能。"
+  },
+  {
+    "instruction": "BIOS中如何设置CPU核心数？",
+    "output": "进入Advanced CPU Configuration，找到Active Processor Cores或Core Enable，可手动关闭某些核心（用于超频或节能）。"
+  },
+  {
+    "instruction": "什么是Secure Boot的默认密钥？",
+    "output": "Secure Boot预置Microsoft的签名证书，验证Windows启动程序。安装其他操作系统可能需要添加自定义密钥或关闭Secure Boot。"
+  },
+  {
+    "instruction": "如何备份当前BIOS？",
+    "output": "使用主板自带工具（如ASUS BIOS FlashBack），或第三方软件（AFUWIN、Universal BIOS Backup Toolkit），在Windows下备份当前BIOS为ROM文件。"
+  },
+  {
+    "instruction": "BIOS中SATA热插拔怎么开启？",
+    "output": "进入BIOS，找到SATA Configuration，将对应端口设为Hot Plug Enabled。开启后可在系统运行时插拔SATA硬盘（需驱动支持）。"
+  },
+  {
+    "instruction": "什么是Intel Speed Shift？",
+    "output": "Speed Shift是新一代频率调节技术，比SpeedStep响应更快，由硬件自主调节，Windows 10以上系统支持。在BIOS Advanced CPU中开启。"
+  },
+  {
+    "instruction": "如何关闭BIOS中的串口（COM口）？",
+    "output": "进入Advanced -> Onboard Devices Configuration，找到Serial Port或COM Port，设为Disabled。释放IRQ资源。"
+  },
+  {
+    "instruction": "BIOS中的PCI Latency Timer是什么？",
+    "output": "PCI延迟定时器控制PCI设备占用总线的时间，默认32或64。调整可优化多PCI设备性能，一般无需修改。"
+  },
+  {
+    "instruction": "什么是UEFI Capsule Update？",
+    "output": "UEFI胶囊更新是Windows Update推送BIOS更新的机制，通过操作系统静默更新BIOS，可能带来风险，可在BIOS中禁用。"
+  },
+  {
+    "instruction": "如何降级BIOS版本？",
+    "output": "部分主板允许直接刷写旧版本，多数需要开启BIOS降级选项（如BIOS Flash Utility中的Allow Downgrade），或使用编程器强制刷写。"
+  },
+  {
+    "instruction": "BIOS中Intel Rapid Start Technology是什么？",
+    "output": "英特尔快速启动技术，将系统状态保存到SSD，实现类似休眠但更快的唤醒。需要专门的SSD分区和BIOS启用。"
+  },
+  {
+    "instruction": "如何开启Above 4G Decoding？",
+    "output": "在BIOS的Advanced -> PCI Subsystem中，将Above 4G Decoding设为Enabled。用于多显卡、挖矿或大显存计算。"
+  },
+  {
+    "instruction": "BIOS中的Spread Spectrum是什么？",
+    "output": "扩频时钟，通过轻微调制时钟频率降低电磁干扰（EMI），可能影响超频稳定性。超频时通常关闭。"
+  },
+  {
+    "instruction": "如何禁用板载显卡？",
+    "output": "进入BIOS，找到Advanced -> Graphics Configuration或Onboard GPU，将Primary Display设为PEG或PCIe，板载显卡自动禁用。"
+  },
+  {
+    "instruction": "什么是Intel VT-d的ACS？",
+    "output": "ACS是访问控制服务，VT-d的一部分，控制PCIe设备间的直接访问。开启可增强虚拟机隔离，可能影响设备直通。"
+  },
+  {
+    "instruction": "BIOS中如何调节内存时序？",
+    "output": "在超频菜单（OC、DRAM Configuration）中，找到DRAM Timing Control，可手动设置CL、tRCD、tRP、tRAS等时序。"
+  },
+  {
+    "instruction": "什么是BIOS的SMBIOS？",
+    "output": "SMBIOS是系统管理BIOS标准，提供硬件信息接口（如DMI信息）。操作系统通过它获取主板、序列号等信息。"
+  },
+  {
+    "instruction": "如何开启Resizable BAR？",
+    "output": "1) 更新BIOS；2) 进入Advanced -> PCI Subsystem；3) 将Resizable BAR和Above 4G Decoding设为Enabled；4) 更新显卡驱动。"
+  },
+  {
+    "instruction": "BIOS中如何设置启动延迟？",
+    "output": "在Boot菜单中找到Boot Delay Time或POST Delay，设置延迟秒数，方便按热键进入BIOS，解决快速启动无法进入问题。"
+  },
+  {
+    "instruction": "什么是Intel Boot Guard？",
+    "output": "Intel Boot Guard是安全启动技术，验证BIOS数字签名，防止恶意BIOS篡改。OEM厂商可启用，用户无法关闭。"
+  },
+  {
+    "instruction": "BIOS中如何调整核显显存大小？",
+    "output": "进入Advanced -> Graphics Configuration或北桥设置，找到DVMT Pre-Allocated或IGPU Memory，可设置32M-1GB不等的显存。"
+  },
+  {
+    "instruction": "如何通过U盘盲刷BIOS？",
+    "output": "将BIOS文件重命名为特定名称（如MSI.ROM、CREATIVE.ROM），放入FAT32 U盘根目录，插到特定USB口，开机按组合键（如Ctrl+Home）自动恢复。"
+  },
+  {
+    "instruction": "什么是BIOS的ROM Checksum？",
+    "output": "ROM校验和，开机时BIOS自检自己的完整性，校验失败会提示CMOS Checksum Bad，可能触发恢复机制。"
+  },
+  {
+    "instruction": "如何关闭主板的RGB灯效？",
+    "output": "进入BIOS的Onboard Device或RGB LED Configuration，将LED Lighting设为Off或Disabled。部分主板需专用软件关闭。"
+  },
+  {
+    "instruction": "BIOS中的S4休眠是什么？",
+    "output": "S4是ACPI定义的休眠到硬盘状态，系统内容保存到硬盘，完全断电。恢复时读取硬盘，比S3慢但更省电。"
+  },
+  {
+    "instruction": "什么是Intel AMT？如何关闭？",
+    "output": "AMT是主动管理技术，用于远程管理。在BIOS的Advanced -> AMT Configuration中，将Intel AMT设为Disabled，同时禁用ME。"
+  },
+  {
+    "instruction": "如何设置BIOS中的电源唤醒定时器？",
+    "output": "进入Power菜单，找到RTC Alarm或Wake up on Alarm，设置日期和时间（小时/分钟/秒），到点自动开机。"
+  },
+  {
+    "instruction": "BIOS中如何显示详细的POST信息？",
+    "output": "在Boot菜单中，将Full Screen Logo设为Disabled，并将POST Delay Time设为1秒以上，即可看到自检文本信息。"
+  },
+  {
+    "instruction": "什么是UEFI中的Boot Order Lock？",
+    "output": "启动顺序锁定，防止恶意软件修改启动项。部分BIOS提供选项锁定启动顺序，需要管理员密码才能修改。"
+  },
+  {
+    "instruction": "如何用编程器刷写BIOS？",
+    "output": "使用CH341A等编程器，夹子夹住BIOS芯片，连接电脑，使用软件（如Flashrom、NeoProgrammer）读取并写入BIOS文件，可救砖。"
+  },
+  {
+    "instruction": "BIOS中的SATA Aggressive Link Power Management是什么？",
+    "output": "ALPM是SATA主动链路电源管理，节省功耗但可能导致部分SSD卡顿。在BIOS Advanced中可关闭以提高兼容性。"
+  },
+  {
+    "instruction": "什么是PCIe ASPM？",
+    "output": "ASPM是PCIe主动状态电源管理，控制PCIe链路电源状态（L0s/L1），节能但可能影响高性能设备。可在BIOS中关闭。"
+  },
+  {
+    "instruction": "如何开启BIOS中的虚拟化IOMMU？",
+    "output": "AMD平台IOMMU相当于Intel VT-d。在Advanced -> AMD CBS或NBIO选项中，将IOMMU设为Enabled。"
+  },
+  {
+    "instruction": "BIOS中如何调整CPU的TDP限制？",
+    "output": "在Advanced CPU Configuration中，找到Package Power Limit或TDP Configuration，可调整PL1/PL2功耗墙。"
+  },
+  {
+    "instruction": "什么是BIOS的Flash Lock？",
+    "output": "BIOS写保护，防止恶意软件修改BIOS。开启后无法通过软件刷新BIOS，需先关闭。位于Security或Advanced菜单。"
+  },
+  {
+    "instruction": "如何开启SR-IOV？",
+    "output": "进入BIOS，找到Advanced -> PCI Configuration，将SR-IOV设为Enabled。需要CPU和网卡/显卡支持。"
+  },
+  {
+    "instruction": "BIOS中如何调节风扇曲线？",
+    "output": "进入Hardware Monitor或Q-Fan Control，选择风扇（CPU/机箱），设置温度-转速曲线（如60度30%、80度80%）。"
+  },
+  {
+    "instruction": "什么是BIOS的Debug LED？",
+    "output": "高端主板上的两位数码管，显示POST代码（如C1内存错误、99超时），用于故障诊断。代码含义可查主板手册。"
+  },
+  {
+    "instruction": "如何导出BIOS设置？",
+    "output": "部分BIOS支持Save Profile或Export Settings，将配置文件保存到U盘。其他主板可使用AMIBCP或H2OEZE工具提取。"
+  },
+  {
+    "instruction": "BIOS中的Intel GbE是什么？",
+    "output": "Intel Gigabit Ethernet，板载网卡控制器。可在Onboard Devices中启用或禁用，以及开启网卡PXE启动。"
+  },
+  {
+    "instruction": "什么是UEFI中的HTTP Boot？",
+    "output": "通过HTTP网络启动，从网络服务器下载启动镜像。在BIOS的Boot菜单中启用，适合无盘工作站。"
+  },
+  {
+    "instruction": "如何关闭BIOS中的数字音频输出（SPDIF）？",
+    "output": "进入Onboard Devices Configuration，找到SPDIF Out或HDA Audio，设为Disabled。"
+  },
+  {
+    "instruction": "BIOS中的C-States是什么？",
+    "output": "CPU省电状态（C0活跃，C1-C10睡眠），深度C-State可省电但可能引起延迟。超频时建议关闭C6/C7等。"
+  },
+  {
+    "instruction": "如何启用BIOS中的PBO（AMD）？",
+    "output": "进入Advanced -> AMD Overclocking，找到Precision Boost Overdrive，设为Enabled或Advanced，可调节PPT/TDC/EDC。"
+  },
+  {
+    "instruction": "什么是BIOS中的CSM与Secure Boot关系？",
+    "output": "开启CSM会禁用Secure Boot，因为Legacy模式不支持安全启动。要使用Secure Boot必须关闭CSM并设为纯UEFI模式。"
+  },
+  {
+    "instruction": "如何清除BIOS的日志（Event Log）？",
+    "output": "进入BIOS的Security或Advanced菜单，找到SMBIOS Event Log，选择Clear Event Log。"
+  },
+  {
+    "instruction": "BIOS中如何切换PCIe速度（Gen3/Gen4）？",
+    "output": "在Advanced -> PCI Subsystem中，找到PCI Express Speed或Link Speed，可设为Auto/Gen1/Gen2/Gen3/Gen4。"
+  },
+  {
+    "instruction": "什么是UEFI中的TPM 2.0？",
+    "output": "TPM 2.0是可信平台模块2.0，用于硬件加密和Windows 11要求。在BIOS Security中开启Intel PTT或AMD fTPM。"
+  },
+  {
+    "instruction": "如何关闭开机自检内存检测（Quick Boot）？",
+    "output": "在Boot菜单中，将Quick Boot或Fast Boot设为Enabled，跳过详细内存测试，加快启动。"
+  },
+  {
+    "instruction": "BIOS中的Spread Spectrum对超频影响？",
+    "output": "扩频会轻微波动时钟频率，可能降低稳定性。超频时建议关闭Spread Spectrum以获得稳定频率。"
+  },
+  {
+    "instruction": "什么是Intel VMD？如何开启？",
+    "output": "VMD是英特尔卷管理设备，用于管理NVMe RAID。在BIOS Advanced -> PCI Configuration中启用，需要对应驱动。"
+  },
+  {
+    "instruction": "如何禁用BIOS中的内置蓝牙？",
+    "output": "进入Onboard Devices，找到Bluetooth或Wireless，设为Disabled。蓝牙模块仍可使用Windows开关。"
+  },
+  {
+    "instruction": "BIOS中的Memory Remap是什么？",
+    "output": "内存重映射，将32位以上内存地址重新映射，使系统使用全部内存。64位系统必须开启，否则4GB以上内存不可用。"
+  },
+  {
+    "instruction": "如何设置BIOS中的CPU倍频？",
+    "output": "在OC或AI Tweaker菜单中，找到CPU Ratio或Multiplier，可手动设定倍频，如40代表4.0GHz。"
+  },
+  {
+    "instruction": "什么是BIOS中的PCH Configuration？",
+    "output": "PCH（平台控制器中枢）配置，包括SATA、USB、音频等控制器设置。可在Advanced中找到。"
+  },
+  {
+    "instruction": "如何开启Above 4G Decoding？",
+    "output": "在Advanced -> PCI Subsystem中，将Above 4G Decoding设为Enabled。用于多显卡、挖矿或大显存计算。"
+  },
+  {
+    "instruction": "BIOS中如何显示CPU温度？",
+    "output": "进入PC Health Status或Hardware Monitor，可直接查看CPU温度、主板温度和各个风扇转速。"
+  },
+  {
+    "instruction": "什么是Intel SpeedStep和Speed Shift区别？",
+    "output": "SpeedStep由操作系统控制频率，SpeedShift由硬件自主控制，响应更快。两者可同时开启。"
+  },
+  {
+    "instruction": "如何恢复BIOS的默认设置？",
+    "output": "进入BIOS，按F9或选择Load Optimized Defaults，确认后按F10保存退出。或拔电池清除CMOS。"
+  },
+  {
+    "instruction": "BIOS中的CPU Power Management包含哪些？",
+    "output": "包括EIST（增强SpeedStep）、C-States、Turbo Boost、TDP限制、VRM电流容量等，影响功耗和性能。"
+  },
+  {
+    "instruction": "如何关闭BIOS中的板载WiFi？",
+    "output": "进入Onboard Devices Configuration，找到WiFi或WLAN Controller，设为Disabled。"
+  },
+  {
+    "instruction": "什么是UEFI中的Boot from NVMe？",
+    "output": "从NVMe SSD启动。UEFI原生支持NVMe驱动，无需设置。Legacy模式需额外加载驱动。"
+  },
+  {
+    "instruction": "如何设置BIOS中的虚拟化中断重映射？",
+    "output": "在VT-d或IOMMU设置中，找到Interrupt Remapping，设为Enabled。用于虚拟化设备直通。"
+  },
+  {
+    "instruction": "BIOS中如何禁用未使用的SATA端口？",
+    "output": "进入SATA Configuration，将对应端口设为Disabled，减少启动检测时间。"
+  },
+  {
+    "instruction": "什么是Intel Optane Memory？BIOS中如何开启？",
+    "output": "Optane内存加速机械硬盘。需BIOS中SATA Mode设为Intel RST Premium with Optane，安装驱动后启用。"
+  },
+  {
+    "instruction": "如何开启BIOS中的TPM 2.0 for Windows 11？",
+    "output": "进入Security -> Trusted Computing，将Security Device Support设为Enabled，并选择TPM 2.0。AMD平台启用fTPM。"
+  },
+  {
+    "instruction": "BIOS中的IOAPIC是什么？",
+    "output": "IOAPIC是I/O高级可编程中断控制器，支持更多中断（24个以上），现代系统默认开启。"
+  },
+  {
+    "instruction": "如何设置BIOS中的USB唤醒？",
+    "output": "进入Power Management，将USB Wake Support或Wake on USB设为Enabled，移动鼠标或按键盘即可唤醒睡眠。"
+  },
+  {
+    "instruction": "BIOS中如何关闭内置喇叭（蜂鸣器）？",
+    "output": "找到Onboard Devices或Hardware Monitor，将Onboard Speaker或Beep设为Disabled。"
+  },
+  {
+    "instruction": "什么是UEFI中的Network Stack？",
+    "output": "网络协议栈，支持PXE或HTTP网络启动。在BIOS的Boot菜单中启用Network Stack并设置IPv4/IPv6 PXE。"
+  },
+  {
+    "instruction": "如何调整BIOS中的DRAM电压？",
+    "output": "在OC或DRAM Configuration中，找到DRAM Voltage或VDDIO，通常DDR4为1.2-1.35V，DDR5为1.1-1.3V。"
+  },
+  {
+    "instruction": "BIOS中的Intel VT-x和VT-d区别？",
+    "output": "VT-x用于CPU虚拟化，运行虚拟机；VT-d用于I/O虚拟化，设备直通。两者独立，均可单独开启。"
+  },
+  {
+    "instruction": "如何解决BIOS中找不到NVMe SSD？",
+    "output": "1) 更新BIOS；2) 切换CSM/UEFI模式；3) 检查M.2插槽协议；4) 重新插拔SSD；5) 清除CMOS。"
+  },
+  {
+    "instruction": "BIOS中的CPU Load-Line Calibration是什么？",
+    "output": "LLC防掉压设置，补偿高负载下CPU电压下降。等级越高补偿越强，可提高超频稳定性。"
+  },
+  {
+    "instruction": "什么是BIOS中的ECC内存支持？",
+    "output": "错误校验内存，服务器平台支持。工作站主板BIOS中可开启ECC功能，检测并纠正内存错误。"
+  },
+  {
+    "instruction": "如何禁用BIOS中的硬件预取器？",
+    "output": "在Advanced CPU Configuration中，找到Hardware Prefetcher和Adjacent Cache Line Prefetch，设为Disabled。"
+  },
+  {
+    "instruction": "什么是UEFI中的Platform Key？",
+    "output": "平台密钥（PK），Secure Boot的最高级密钥，用于管理KEK和db/dbx。可自定义或清除。"
+  },
+  {
+    "instruction": "如何导出BIOS的ACPI表？",
+    "output": "使用RWEverything或ACPI Viewer软件，在Windows下导出DSDT、SSDT等表格，用于分析硬件。"
+  },
+  {
+    "instruction": "BIOS中的Intel C-State Auto/Enabled区别？",
+    "output": "Auto由CPU决定，Enabled开启所有支持的C-State，Disabled强制使用C0/C1，可减少延迟。"
+  },
+  {
+    "instruction": "如何设置BIOS中的ECC Scrub？",
+    "output": "在DRAM Configuration中，找到DRAM ECC Scrub或Patrol Scrub，设置时间间隔（小时），定期检查内存错误。"
+  },
+  {
+    "instruction": "什么是BIOS中的NVMe RAID？",
+    "output": "将多个NVMe SSD组成RAID阵列，需要CPU和主板支持，在BIOS中VMD或Intel RST下配置。"
+  },
+  {
+    "instruction": "如何关闭BIOS中的内置麦克风？",
+    "output": "进入Onboard Devices，找到Audio Configuration中的Mic，设为Disabled。"
+  },
+  {
+    "instruction": "BIOS中的Intel Turbo Boost Max 3.0是什么？",
+    "output": "识别体质最好的核心并优先分配单线程负载，提升性能。在BIOS Advanced CPU中开启。"
+  },
+  {
+    "instruction": "如何设置BIOS中的AC Loss Control？",
+    "output": "在Power菜单中，找到After Power Loss或AC Power Loss，可选Power On（来电自启）、Power Off、Last State。"
+  },
+  {
+    "instruction": "什么是BIOS中的TOLUD？",
+    "output": "TOLUD是Top of Low Usable DRAM，设置PCI设备占用内存地址的上限，可调整解决资源冲突。"
+  },
+  {
+    "instruction": "如何开启BIOS中的SVM（AMD虚拟化）？",
+    "output": "进入Advanced -> CPU Configuration，找到SVM Mode，设为Enabled。用于虚拟机、WSL2。"
+  },
+  {
+    "instruction": "BIOS中的Global C-State Control是什么？",
+    "output": "全局C-State控制，开启后允许CPU进入更深睡眠。建议开启以节能，超频时可关闭。"
+  },
+  {
+    "instruction": "如何刷新BIOS而不进入系统？",
+    "output": "使用BIOS FlashBack（华硕）、Q-Flash Plus（技嘉）、M-Flash（微星），只需U盘和电源，无需CPU内存。"
+  },
+  {
+    "instruction": "什么是UEFI中的Secure Boot db/dbx？",
+    "output": "db是签名数据库，允许加载的UEFI程序；dbx是撤销数据库，禁止加载的程序。可手动管理。"
+  },
+  {
+    "instruction": "如何调整BIOS中的PSU电压监控？",
+    "output": "在PC Health中可查看+12V、+5V、+3.3V电压，如果偏差超过5%可能电源故障。"
+  },
+  {
+    "instruction": "BIOS中的SPD Write是什么？",
+    "output": "SPD写保护，禁止修改内存条的SPD信息。开启可防止意外刷写内存，超频玩家需要关闭。"
+  }
+]

@@ -1,0 +1,1 @@
+invalid type: string "78. 问：BIOS 中的“Wake from USB”是什么？\n答：允许通过 USB 设备（如键盘、鼠标）唤醒处于待机或休眠状态的电脑。需要操作系统\n和 BIOS 同时支持。\n79. 问：为什么设置了 U 盘启动却仍然从硬盘启动？\n答：可能是 U 盘不是 FAT32 格式且不支持 UEFI 引导；或者 BIOS 中“Secure Boot”阻止了未

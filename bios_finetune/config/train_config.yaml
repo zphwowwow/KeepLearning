@@ -1,0 +1,28 @@
+model:
+  name: "unsloth/Qwen2.5-1.5B-Instruct"
+  max_seq_length: 512
+  load_in_4bit: true
+
+lora:
+  r: 16
+  alpha: 16
+  dropout: 0.0
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+training:
+  batch_size: 1
+  gradient_accumulation_steps: 4
+  learning_rate: 2e-4
+  num_epochs: 3
+  optim: "adamw_8bit"
+  fp16: false
+  bf16: true
+  gradient_checkpointing: true
+  logging_steps: 5
+  save_steps: 50
+  output_dir: "./outputs/lora"
+  seed: 3407
+
+data:
+  train_file: "data/bios_data.json"
+  # valid_file: "data/valid.json"

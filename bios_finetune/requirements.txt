@@ -1,0 +1,12 @@
+torch==2.7.1+cu118
+torchvision==0.22.1+cu118
+torchaudio==2.7.1+cu118
+unsloth==2025.3.13
+transformers>=4.36.0
+datasets
+accelerate
+peft
+trl
+bitsandbytes
+pyyaml
+tqdm
