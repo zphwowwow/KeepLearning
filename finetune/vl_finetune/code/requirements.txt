@@ -1,0 +1,17 @@
+pandas
+fastparquet
+pyarrow
+modelscope
+torch
+torchvision
+transformers==4.57.1
+deepspeed
+flash_attn
+triton
+accelerate
+peft
+mpi4py
+qwen-vl-utils
+datasets
+openai
+aiofiles

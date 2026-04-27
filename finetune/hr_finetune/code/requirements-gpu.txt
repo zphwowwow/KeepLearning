@@ -1,0 +1,15 @@
+numpy
+transformers
+accelerate
+datasets
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch
+modelscope[datasets]
+hf_xet
+bitsandbytes
+addict
+fastapi
+uvicorn
+peft
+xinference[transformers]
+matplotlib

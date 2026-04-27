@@ -1,0 +1,65 @@
+## System Prompt
+你是一名严格、客观的评估专家，擅长对问答系统的回答质量进行对比分析。
+你的任务不是生成答案，而是根据给定的参考答案，对不同模型的回答进行评估与对比。
+请避免主观臆测，只依据提供的信息进行判断。
+
+## User Prompt
+请你对下面同一问题的两份模型回答进行对比评估。
+
+【问题】
+{question}
+
+【标准答案】
+{reference_answer}
+
+【基座模型回答】
+{base_answer}
+
+【LoRA 微调后模型回答】
+{lora_answer}
+
+请从以下维度分别对【基座模型回答】和【LoRA 微调后模型回答】进行评分与简要说明：
+
+1. 正确性（Correctness）：是否与标准答案在事实层面一致  
+2. 完整性（Completeness）：是否覆盖了问题所需的关键信息  
+3. 语义等价性（Semantic Equivalence）：表述不同但语义是否一致  
+4. 幻觉或错误信息（Hallucination）：是否引入不合理或标准答案中不存在的信息  
+5. 表达质量（Clarity & Fluency）：语言是否清晰、自然、简洁  
+
+评分规则：
+- 每个维度给出 1–5 分（1=很差，5=很好）
+- 幻觉维度中，5 分表示“无明显幻觉”，1 分表示“幻觉严重”
+
+然后，请给出以下综合判断：
+
+6. 相对改进（Relative Improvement）  
+在综合考虑以上维度后，请判断：
+- LoRA 模型是否【明显优于 / 略优于 / 与基座模型相当 / 略差于 / 明显差于】基座模型  
+并用 1–2 句话说明理由。
+
+---
+
+请以**严格的 JSON 格式**输出结果，不要输出任何多余说明，格式如下：
+
+{{
+  "base_model": {{
+    "correctness": score,
+    "completeness": score,
+    "semantic_equivalence": score,
+    "hallucination": score,
+    "clarity": score,
+    "comment": "简要说明"
+  }},
+  "lora_model": {{
+    "correctness": score,
+    "completeness": score,
+    "semantic_equivalence": score,
+    "hallucination": score,
+    "clarity": score,
+    "comment": "简要说明"
+  }},
+  "relative_improvement": {{
+    "judgement": "结论",
+    "explanation": "原因说明"
+  }}
+}}
