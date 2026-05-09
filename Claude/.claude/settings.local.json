@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:linux.die.net)",
+      "WebFetch(domain:www.thomas-krenn.com)",
+      "Bash(\"D:/camellia/out/CursorProject/ipmitool/ipmitool.exe\" -V)",
+      "Bash(\"D:/camellia/out/CursorProject/ipmitool/ipmitool.exe\" --version)",
+      "Bash(\"D:/camellia/out/CursorProject/ipmitool/ipmitool.exe\" -h)",
+      "Bash(D:/camellia/out/CursorProject/ipmitool/ipmitool.exe sdr *)",
+      "WebFetch(domain:manpages.debian.org)",
+      "WebFetch(domain:github.com)",
+      "Bash(\"D:/camellia/out/CursorProject/ipmitool/ipmitool.exe\")",
+      "Bash(pip install *)",
+      "Bash(python *)"
+    ]
+  }
+}

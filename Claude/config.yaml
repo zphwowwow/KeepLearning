@@ -1,0 +1,23 @@
+# BMC 远程管理助手 - 配置文件
+
+bmc:
+  host: 10.8.148.12        # BMC 地址
+  username: Admin            # BMC 用户名
+  password: Admin@8000       # 密码，留空则启动时交互输入
+  interface: lanplus         # 接口类型: lan 或 lanplus
+  port: 623                  # 端口
+  timeout: 10                # 超时秒数
+  retries: 2                 # 重试次数
+
+llm:
+  api_key: "sk-jihhacbnfakipnratjwdhtcutnzfasheowrjclkzsilhxieh"                                    # 硅基流动 API Key（替换为你自己的）
+  base_url: "https://api.siliconflow.cn/v1"            # 硅基流动 API 地址
+  model: "Pro/zai-org/GLM-5.1"                    # 模型名称
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+
+memory:
+  backend: sqlite
+  db_path: bmc_memory.db       # 记忆数据库路径

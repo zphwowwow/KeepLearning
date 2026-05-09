@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<!--
+  BMC 远程管理助手 — 前端聊天界面
+
+  单页面应用，通过 WebSocket 与 FastAPI 后端通信，
+  实现 AI Agent 对话式 BMC 服务器管理。
+
+  功能特性:
+    - WebSocket 实时双向通信
+    - 工具调用过程可视化（工具名、参数、执行结果）
+    - 快捷操作按钮（一键发送常见命令）
+    - 连接状态指示（在线/离线）
+    - 新会话创建（重置对话上下文）
+    - 打字动画效果（等待 AI 回复时）
+    - 自动断线重连（3 秒间隔）
+    - 响应式布局
+
+  技术栈:
+    - 原生 HTML + CSS + JavaScript（无框架依赖）
+    - CSS Variables 主题系统（深色主题）
+    - WebSocket 原生 API
+    - 自适应 textarea（输入框随内容自动增高）
+
+  通信协议:
+    发送: {"message": "用户输入"}
+    接收: {"type": "assistant|tool_call|tool_result|error", ...}
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMC 远程管理助手</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   CSS 变量 — 深色主题色彩系统
+   统一管理全局颜色，便于主题切换和一致性维护
+   ══════════════════════════════════════════════════════════════════ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0f1117;          /* 主背景 */
+  --sidebar: #161922;     /* 侧边栏背景 */
+  --card: #1c1f2e;        /* 卡片/消息气泡背景 */
+  --border: #2a2d3e;      /* 边框 */
+  --text: #e0e0e0;        /* 主文字 */
+  --text2: #8b8fa3;       /* 次要文字 */
+  --accent: #6c8cff;      /* 强调色（按钮、链接） */
+  --accent2: #4a6aef;     /* 强调色2（用户消息气泡） */
+  --green: #4ade80;       /* 成功/在线状态 */
+  --red: #f87171;         /* 错误/离线状态 */
+  --orange: #fbbf24;      /* 警告 */
+}
+
+/* 全局布局: 左侧边栏 + 右侧聊天区，flex 横向排列 */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+}
+
+/* ── 侧边栏 ──────────────────────────────────────────────────── */
+/* 包含: 应用标题、连接状态、BMC 信息、会话列表、新建会话按钮 */
+.sidebar {
+  width: 260px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
+.sidebar-header h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.sidebar-header .status { font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+
+/* 连接状态指示灯: 绿色=在线，红色=离线 */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-dot.online { background: var(--green); }
+.status-dot.offline { background: var(--red); }
+
+/* BMC 连接信息展示区 */
+.bmc-info { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.bmc-info div { margin-bottom: 6px; color: var(--text2); }
+.bmc-info span { color: var(--text); }
+
+/* 会话列表区域 */
+.sessions { flex: 1; overflow-y: auto; padding: 12px; }
+.sessions h3 { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding: 0 8px; }
+.session-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.15s; margin-bottom: 2px; }
+.session-item:hover { background: var(--card); color: var(--text); }
+.session-item.active { background: var(--card); color: var(--accent); }
+
+/* 新建会话按钮 */
+.new-session { margin: 12px; padding: 10px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text2); cursor: pointer; font-size: 13px; text-align: center; transition: all 0.15s; }
+.new-session:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── 主聊天区 ────────────────────────────────────────────────── */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.chat-header { padding: 16px 24px; border-bottom: 1px solid var(--border); font-size: 15px; font-weight: 500; }
+
+/* 消息滚动区域 */
+.chat-messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── 消息气泡 ────────────────────────────────────────────────── */
+.msg { max-width: 80%; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg.user { align-self: flex-end; }       /* 用户消息靠右 */
+.msg.assistant { align-self: flex-start; } /* AI 消息靠左 */
+.msg-bubble { padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.msg.user .msg-bubble { background: var(--accent2); color: #fff; border-bottom-right-radius: 4px; }
+.msg.assistant .msg-bubble { background: var(--card); border-bottom-left-radius: 4px; }
+.msg-time { font-size: 11px; color: var(--text2); margin-top: 4px; padding: 0 4px; }
+.msg.user .msg-time { text-align: right; }
+
+/* ── 工具调用卡片 ────────────────────────────────────────────── */
+/* 展示 LLM 调用了哪个工具、传了什么参数、返回了什么结果 */
+.tool-call { background: var(--sidebar); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-size: 13px; }
+.tool-call-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-weight: 500; }
+.tool-call-header .icon { font-size: 14px; }
+.tool-call-name { color: var(--accent); font-family: "Cascadia Code", "Fira Code", monospace; }
+.tool-call-args { color: var(--text2); font-family: "Cascadia Code", "Fira Code", monospace; font-size: 12px; }
+
+/* 工具执行结果，左边框颜色标识成功(绿)/失败(红) */
+.tool-result { background: var(--sidebar); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 6px; font-size: 13px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+.tool-result.error { border-left-color: var(--red); }
+
+/* ── 输入区 ──────────────────────────────────────────────────── */
+.chat-input { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-end; }
+.chat-input textarea {
+  flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 16px; color: var(--text); font-size: 14px; font-family: inherit;
+  resize: none; outline: none; max-height: 120px; min-height: 44px; transition: border-color 0.15s;
+}
+.chat-input textarea:focus { border-color: var(--accent); }
+.chat-input button { background: var(--accent); border: none; border-radius: 10px; padding: 12px 20px; color: #fff; font-size: 14px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.chat-input button:hover { background: var(--accent2); }
+.chat-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── 打字动画 ────────────────────────────────────────────────── */
+/* AI 正在思考/等待工具结果时显示的跳动的三点动画 */
+.typing { display: flex; gap: 4px; padding: 8px 4px; }
+.typing span { width: 6px; height: 6px; background: var(--text2); border-radius: 50%; animation: blink 1.4s infinite; }
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+
+/* ── 欢迎页 ──────────────────────────────────────────────────── */
+.welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text2); }
+.welcome h1 { font-size: 24px; color: var(--text); font-weight: 600; }
+.welcome p { font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6; }
+.quick-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.quick-action { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; color: var(--text); transition: all 0.15s; }
+.quick-action:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── 滚动条美化 ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     侧边栏: 应用信息 + BMC 连接状态 + 会话管理
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h2>BMC 管理助手</h2>
+    <!-- WebSocket 连接状态指示灯 -->
+    <div class="status">
+      <div class="status-dot offline" id="statusDot"></div>
+      <span id="statusText">未连接</span>
+    </div>
+  </div>
+
+  <!-- BMC 目标信息（从 /api/config 接口动态加载） -->
+  <div class="bmc-info">
+    <div>目标主机: <span id="bmcHost">-</span></div>
+    <div>用户名: <span id="bmcUser">-</span></div>
+    <div>模型: <span id="llmModel">-</span></div>
+  </div>
+
+  <!-- 会话列表（当前为简化版，仅展示当前会话） -->
+  <div class="sessions">
+    <h3>会话</h3>
+    <div class="session-item active" id="sessionItem">当前会话</div>
+  </div>
+
+  <!-- 新建会话按钮: 断开当前 WebSocket，建立新连接 -->
+  <button class="new-session" onclick="newSession()">+ 新会话</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     主聊天区: 标题 + 消息列表 + 输入框
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="main">
+  <div class="chat-header" id="chatHeader">BMC 远程管理助手</div>
+
+  <!-- 消息滚动区域: 动态添加用户/AI/工具消息 -->
+  <div class="chat-messages" id="chatMessages">
+    <!-- 欢迎页: 首次进入时显示，包含使用说明和快捷操作 -->
+    <div class="welcome" id="welcome">
+      <h1>BMC 远程管理助手</h1>
+      <p>用自然语言操作服务器 BMC，支持电源控制、传感器查询、日志查看等。对话历史会自动保存。</p>
+      <!-- 快捷操作按钮: 点击即发送对应指令 -->
+      <div class="quick-actions">
+        <div class="quick-action" onclick="sendQuick('查看服务器电源状态')">电源状态</div>
+        <div class="quick-action" onclick="sendQuick('读取所有传感器数据')">传感器</div>
+        <div class="quick-action" onclick="sendQuick('查看系统事件日志')">系统日志</div>
+        <div class="quick-action" onclick="sendQuick('查看BMC网络配置')">网络配置</div>
+        <div class="quick-action" onclick="sendQuick('查看机箱状态')">机箱状态</div>
+        <div class="quick-action" onclick="sendQuick('查看FRU信息')">FRU信息</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 输入区: 自适应高度的 textarea + 发送按钮 -->
+  <div class="chat-input">
+    <textarea id="msgInput" rows="1"
+              placeholder="输入指令，如"查看电源状态"…"
+              onkeydown="handleKey(event)"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">发送</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// 全局状态
+// ══════════════════════════════════════════════════════════════════
+let ws = null;             // WebSocket 连接实例
+let toolCallStack = [];    // 当前待返回结果的工具调用栈（前端展示用）
+let reconnectTimer = null; // 断线重连定时器
+
+// DOM 元素缓存
+const chatMessages = document.getElementById('chatMessages');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+const welcome = document.getElementById('welcome');
+
+// ── 输入框自适应高度 ──────────────────────────────────────────
+// 随用户输入内容增加，textarea 自动增高（最大 120px）
+msgInput.addEventListener('input', () => {
+  msgInput.style.height = 'auto';
+  msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
+});
+
+// ── 键盘事件: Enter 发送，Shift+Enter 换行 ────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// WebSocket 连接管理
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * 建立 WebSocket 连接，注册事件处理器。
+ * - onopen:  更新连接状态为"已连接"
+ * - onclose: 更新状态为"已断开"，3 秒后自动重连
+ * - onerror: 触发 onclose，由重连机制处理
+ * - onmessage: 解析 JSON 数据，分发到 handleWSMessage()
+ */
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+  ws.onopen = () => {
+    document.getElementById('statusDot').className = 'status-dot online';
+    document.getElementById('statusText').textContent = '已连接';
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  };
+
+  ws.onclose = () => {
+    document.getElementById('statusDot').className = 'status-dot offline';
+    document.getElementById('statusText').textContent = '已断开';
+    reconnectTimer = setTimeout(connect, 3000);  // 3秒后自动重连
+  };
+
+  ws.onerror = () => ws.close();
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    handleWSMessage(data);
+  };
+}
+
+/**
+ * 处理 WebSocket 接收到的消息，根据 type 分发到对应的 DOM 操作。
+ *
+ * 消息类型:
+ *   - assistant:   AI 最终文本回复
+ *   - tool_call:   LLM 调用了工具（显示工具名和参数）
+ *   - tool_result: 工具执行结果
+ *   - error:       错误信息
+ */
+function handleWSMessage(data) {
+  if (data.type === 'user') return; // 用户消息已在本地添加
+
+  if (data.type === 'assistant') {
+    hideWelcome();
+    removeTyping();
+    addAssistantMsg(data.content);
+  } else if (data.type === 'tool_call') {
+    hideWelcome();
+    toolCallStack.push(data);
+    addToolCall(data.name, data.args);  // 显示工具调用卡片
+    showTyping();                        // 显示等待动画
+  } else if (data.type === 'tool_result') {
+    addToolResult(data.name, data.content);  // 显示工具结果
+  } else if (data.type === 'error') {
+    removeTyping();
+    addAssistantMsg('错误: ' + data.content);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 消息发送
+// ══════════════════════════════════════════════════════════════════
+
+/** 发送用户消息到后端 */
+function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+  msgInput.value = '';
+  msgInput.style.height = 'auto';
+  hideWelcome();
+  addUserMsg(text);           // 本地添加用户消息气泡
+  showTyping();               // 显示等待动画
+  ws.send(JSON.stringify({ message: text }));
+}
+
+/** 快捷操作: 将预设文本填入输入框并发送 */
+function sendQuick(text) {
+  msgInput.value = text;
+  sendMessage();
+}
+
+/** 新建会话: 清空聊天记录，断开并重连 WebSocket（获取新 thread_id） */
+function newSession() {
+  chatMessages.innerHTML = '';
+  welcome.style.display = '';
+  chatMessages.appendChild(welcome);
+  toolCallStack = [];
+  if (ws) ws.close();
+  connect();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// DOM 操作辅助函数
+// ══════════════════════════════════════════════════════════════════
+
+/** 添加用户消息气泡（蓝色，靠右） */
+function addUserMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerHTML = `<div class="msg-bubble">${esc(text)}</div><div class="msg-time">${now()}</div>`;
+  chatMessages.appendChild(el);
+  scrollBottom();
+}
+
+/** 添加 AI 回复气泡（深色，靠左） */
+function addAssistantMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'msg assistant';
+  el.innerHTML = `<div class="msg-bubble">${esc(text)}</div><div class="msg-time">${now()}</div>`;
+  chatMessages.appendChild(el);
+  scrollBottom();
+}
+
+/** 添加工具调用卡片，显示工具名和参数 */
+function addToolCall(name, args) {
+  const el = document.createElement('div');
+  el.className = 'tool-call';
+  const argsStr = args && Object.keys(args).length ? JSON.stringify(args) : '';
+  el.innerHTML = `<div class="tool-call-header"><span class="icon">🔧</span> 调用: <span class="tool-call-name">${esc(name)}</span></div>${argsStr ? `<div class="tool-call-args">${esc(argsStr)}</div>` : ''}`;
+  const wrapper = document.createElement('div');
+  wrapper.style.maxWidth = '80%';
+  wrapper.appendChild(el);
+  chatMessages.appendChild(wrapper);
+  scrollBottom();
+}
+
+/** 添加工具执行结果卡片，左侧绿色边框标识成功 */
+function addToolResult(name, content) {
+  const el = document.createElement('div');
+  el.className = 'tool-result';
+  el.textContent = content;
+  const wrapper = document.createElement('div');
+  wrapper.style.maxWidth = '80%';
+  wrapper.appendChild(el);
+  chatMessages.appendChild(wrapper);
+  scrollBottom();
+}
+
+/** 显示打字等待动画（三个跳动的点） */
+function showTyping() {
+  removeTyping();
+  const el = document.createElement('div');
+  el.className = 'msg assistant';
+  el.id = 'typingIndicator';
+  el.innerHTML = '<div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+  chatMessages.appendChild(el);
+  scrollBottom();
+}
+
+/** 移除打字动画 */
+function removeTyping() {
+  const t = document.getElementById('typingIndicator');
+  if (t) t.remove();
+}
+
+/** 隐藏欢迎页 */
+function hideWelcome() {
+  welcome.style.display = 'none';
+}
+
+/** 滚动到底部（新消息到达时自动滚动） */
+function scrollBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+/** HTML 转义，防止 XSS */
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/** 获取当前时间（HH:MM 格式） */
+function now() {
+  return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 初始化
+// ══════════════════════════════════════════════════════════════════
+
+// 从 /api/config 接口加载 BMC 信息，更新侧边栏展示
+fetch('/api/config').then(r => r.json()).then(cfg => {
+  document.getElementById('bmcHost').textContent = cfg.bmc_host || '-';
+  document.getElementById('bmcUser').textContent = cfg.bmc_username || '-';
+  document.getElementById('llmModel').textContent = cfg.model || '-';
+}).catch(() => {});
+
+// 建立 WebSocket 连接
+connect();
+</script>
+</body>
+</html>
