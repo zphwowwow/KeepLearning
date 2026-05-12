@@ -152,6 +152,40 @@ body {
 .quick-action { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; color: var(--text); transition: all 0.15s; }
 .quick-action:hover { border-color: var(--accent); color: var(--accent); }
 
+/* ── 危险操作确认弹窗 ──────────────────────────────────────────── */
+.confirm-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+.confirm-overlay.active { display: flex; }
+.confirm-box {
+  background: var(--card);
+  border: 1px solid var(--orange);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+.confirm-box .confirm-icon { font-size: 36px; margin-bottom: 12px; }
+.confirm-box .confirm-msg { font-size: 15px; line-height: 1.6; margin-bottom: 20px; color: var(--text); }
+.confirm-box .confirm-btns { display: flex; gap: 12px; justify-content: center; }
+.confirm-box .btn-confirm {
+  background: var(--red); color: #fff; border: none; border-radius: 8px;
+  padding: 10px 24px; font-size: 14px; cursor: pointer; transition: opacity 0.15s;
+}
+.confirm-box .btn-confirm:hover { opacity: 0.85; }
+.confirm-box .btn-cancel {
+  background: var(--sidebar); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 24px; font-size: 14px; cursor: pointer; transition: border-color 0.15s;
+}
+.confirm-box .btn-cancel:hover { border-color: var(--accent); }
+
 /* ── 滚动条美化 ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -189,6 +223,18 @@ body {
 
   <!-- 新建会话按钮: 断开当前 WebSocket，建立新连接 -->
   <button class="new-session" onclick="newSession()">+ 新会话</button>
+</div>
+
+<!-- 危险操作确认弹窗: 全屏遮罩 + 居中对话框 -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-msg" id="confirmMessage"></div>
+    <div class="confirm-btns">
+      <button class="btn-confirm" id="confirmYes">确认执行</button>
+      <button class="btn-cancel" id="confirmNo">取消</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
@@ -231,6 +277,7 @@ body {
 let ws = null;             // WebSocket 连接实例
 let toolCallStack = [];    // 当前待返回结果的工具调用栈（前端展示用）
 let reconnectTimer = null; // 断线重连定时器
+let pendingConfirmId = null; // 等待确认的危险操作 tool_call_id
 
 // DOM 元素缓存
 const chatMessages = document.getElementById('chatMessages');
@@ -304,6 +351,11 @@ function handleWSMessage(data) {
     hideWelcome();
     removeTyping();
     addAssistantMsg(data.content);
+  } else if (data.type === 'confirm') {
+    // 危险操作确认请求: 弹出确认对话框
+    hideWelcome();
+    removeTyping();
+    showConfirmDialog(data.message, data.tool_call_id);
   } else if (data.type === 'tool_call') {
     hideWelcome();
     toolCallStack.push(data);
@@ -434,6 +486,56 @@ function esc(s) {
 function now() {
   return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
+
+// ══════════════════════════════════════════════════════════════════
+// 危险操作确认弹窗
+// ══════════════════════════════════════════════════════════════════
+
+const confirmOverlay = document.getElementById('confirmOverlay');
+const confirmMessageEl = document.getElementById('confirmMessage');
+const confirmYesBtn = document.getElementById('confirmYes');
+const confirmNoBtn = document.getElementById('confirmNo');
+
+/**
+ * 显示危险操作确认弹窗
+ * @param {string} message - 确认提示信息
+ * @param {string} toolCallId - 关联的工具调用 ID
+ */
+function showConfirmDialog(message, toolCallId) {
+  pendingConfirmId = toolCallId;
+  confirmMessageEl.textContent = message;
+  confirmOverlay.classList.add('active');
+}
+
+/** 关闭确认弹窗 */
+function hideConfirmDialog() {
+  confirmOverlay.classList.remove('active');
+  pendingConfirmId = null;
+}
+
+// 确认按钮: 发送 approved=true
+confirmYesBtn.addEventListener('click', () => {
+  if (ws && ws.readyState === WebSocket.OPEN && pendingConfirmId) {
+    ws.send(JSON.stringify({
+      type: 'confirm_result',
+      approved: true,
+      tool_call_id: pendingConfirmId,
+    }));
+  }
+  hideConfirmDialog();
+});
+
+// 取消按钮: 发送 approved=false
+confirmNoBtn.addEventListener('click', () => {
+  if (ws && ws.readyState === WebSocket.OPEN && pendingConfirmId) {
+    ws.send(JSON.stringify({
+      type: 'confirm_result',
+      approved: false,
+      tool_call_id: pendingConfirmId,
+    }));
+  }
+  hideConfirmDialog();
+});
 
 // ══════════════════════════════════════════════════════════════════
 // 初始化

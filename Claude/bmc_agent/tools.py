@@ -63,28 +63,61 @@ def _mgr() -> BMCManager:
 
 
 def _safe(func, **kwargs) -> str:
-    """统一异常处理的工具执行包装器。
+    """统一异常处理的工具执行包装器，含错误分类和友好提示。
 
     设计意图:
         - 正常执行：返回 ipmitool 的输出
         - 输出为空：返回"操作成功（无输出）"（部分命令如 user_enable 无输出）
-        - 执行失败：返回"错误: <原因>"（而非抛出异常），让 LLM 理解错误并给用户建议
+        - 执行失败：根据错误类型给出分类提示，帮助 LLM 更好地向用户解释
 
     这种"异常转字符串"的模式是 Agent 应用中的常见实践：
     LLM 无法处理 Python 异常，但可以解读错误信息文本。
+    细致的错误分类让 LLM 能给出更有针对性的排查建议。
 
     Args:
         func: 要调用的 BMCManager 方法
         **kwargs: 传递给该方法的参数
 
     Returns:
-        str: 命令执行结果或错误信息
+        str: 命令执行结果或友好错误信息
     """
     try:
         result = func(**kwargs)
         return result if result else "操作成功（无输出）"
     except IPMIToolError as e:
-        return f"错误: {e}"
+        error_msg = str(e)
+        # 超时: BMC 地址不可达或网络不通
+        if "timed out" in error_msg or "timeout" in error_msg.lower():
+            return (
+                "错误: 命令执行超时。可能原因:\n"
+                "  1. BMC 地址不可达，请检查 IP 是否正确\n"
+                "  2. 网络不通，请确认与 BMC 在同一网段\n"
+                "  3. BMC 服务未启动或端口被防火墙拦截"
+            )
+        # ipmitool.exe 未找到
+        if "not found" in error_msg:
+            return (
+                "错误: ipmitool.exe 未找到。请确认 ipmitool/ 目录下存在 ipmitool.exe 及 Cygwin DLL"
+            )
+        # 非零退出码: 认证失败、命令不支持等
+        if "exited with code" in error_msg:
+            # 常见退出码: 1=一般错误, 2=连接错误, 3=认证错误
+            if "code 1" in error_msg:
+                return (
+                    f"错误: BMC 命令执行失败 — {error_msg}\n"
+                    "可能原因: 命令不被此 BMC 固件支持，或参数有误"
+                )
+            if "code 2" in error_msg or "code 3" in error_msg:
+                return (
+                    f"错误: BMC 连接/认证失败 — {error_msg}\n"
+                    "请检查: 用户名密码是否正确、接口类型(lan/lanplus)是否匹配、BMC 是否启用 IPMI"
+                )
+            return (
+                f"错误: BMC 返回错误 — {error_msg}\n"
+                "建议: 检查连接参数（用户名、密码、接口类型）是否正确"
+            )
+        # 其他未分类错误
+        return f"错误: {error_msg}"
 
 
 # ══════════════════════════════════════════════════════════════════════

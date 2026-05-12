@@ -33,7 +33,7 @@ import sys
 from bmc_agent.config import load_config, create_llm
 from bmc_agent.graph import build_graph
 from bmc_agent.manager import BMCManager
-from bmc_agent.memory import get_sqlite_checkpointer
+from bmc_agent.memory import get_checkpointer, get_sqlite_checkpointer
 from bmc_agent.runner import IPMIToolRunner
 from bmc_agent.tools import set_manager
 
@@ -94,12 +94,20 @@ def main():
     # ── 构建图 & 对话循环 ───────────────────────────────────────────
     # 根据是否启用记忆，决定是否使用 SQLite checkpointer
     if args.no_memory:
-        graph = build_graph(llm)
+        graph = build_graph(llm, context_cfg=config.get("context", {}))
         _chat_loop(graph)
     else:
-        with get_sqlite_checkpointer(config["memory"]["db_path"]) as checkpointer:
-            checkpointer.setup()
-            graph = build_graph(llm, checkpointer=checkpointer)
+        checkpointer_result = get_checkpointer(config)
+        # SQLite 返回上下文管理器，Redis 返回直接实例
+        if hasattr(checkpointer_result, "__enter__"):
+            with checkpointer_result as checkpointer:
+                checkpointer.setup()
+                graph = build_graph(llm, checkpointer=checkpointer,
+                                    context_cfg=config.get("context", {}))
+                _chat_loop(graph)
+        else:
+            graph = build_graph(llm, checkpointer=checkpointer_result,
+                                context_cfg=config.get("context", {}))
             _chat_loop(graph)
 
 

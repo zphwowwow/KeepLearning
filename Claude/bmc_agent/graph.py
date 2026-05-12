@@ -1,47 +1,24 @@
 """
 bmc_agent.graph — LangGraph 状态图（Agent 核心逻辑）
 
-本模块是整个 BMC 管理 Agent 的核心，使用 LangGraph 框架构建了一个
-"ReAct (Reasoning + Acting)" 模式的状态图，实现了 LLM 自主选择工具、
-执行工具、解读结果、继续推理的循环。
+本模块使用 LangGraph 框架构建 "ReAct (Reasoning + Acting)" 模式的状态图，
+实现 LLM 自主选择工具、执行工具、解读结果、继续推理的循环。
+
+增强功能:
+    1. 上下文管理 (trim_messages): 滑动窗口 + 摘要压缩，防止 token 超限
+    2. 错误重试与降级: API 限流指数退避、网络断开优雅提示
+    3. 危险操作确认: SYSTEM_PROMPT 要求 LLM 对危险操作先确认再执行
 
 状态图结构:
-
-    ┌──────────────────────────────────────────────────┐
-    │                                                  │
-    │   START ──→ agent ──→ 有 tool_calls? ──→ tools   │
-    │               ↑           │                      │
-    │               │           ↓                      │
-    │               │          END                     │
-    │               │                                  │
-    │               └───── results ←───────────────────┘
-    │                                                  │
-    └──────────────────────────────────────────────────┘
-
-执行流程:
-    1. 用户消息进入 agent 节点
-    2. LLM 根据用户意图 + 工具描述，决定是直接回复还是调用工具
-    3. 如果调用工具 → 进入 tools 节点执行 → 结果返回 agent → LLM 再次推理
-    4. 如果不需要工具 → LLM 直接回复 → 到达 END
-
-这种设计支持多轮工具调用，例如:
-    用户: "服务器关了，帮我打开"
-    → LLM 调用 power_status() → 发现确实关机
-    → LLM 调用 power_on() → 开机成功
-    → LLM 回复: "已经帮你开机了"
-
-checkpointer (记忆):
-    当传入 checkpointer 时，LangGraph 会自动保存每轮对话的状态，
-    包括消息历史和工具调用结果。下次使用相同 thread_id 调用时，
-    Agent 可以"记住"之前的对话上下文。
-
-关键技术:
-    - MessagesState: LangGraph 内置的消息状态类型，自动管理消息列表
-    - ToolNode: LangGraph 预构建的工具执行节点，自动解析 AIMessage.tool_calls
-      并调用对应的 @tool 函数
-    - conditional_edges: 条件边，根据 LLM 输出决定下一步走向
+    START → agent ──→ 有 tool_calls? ──→ tools ──→ agent
+                 │                              ↑
+                 └──→ 无 tool_calls ──→ END      │
+                     ↑__________________________┘
 """
 
+import time
+
+from langchain_core.messages import AIMessage, SystemMessage
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.prebuilt import ToolNode
 
@@ -52,74 +29,213 @@ SYSTEM_PROMPT = """\
 用户会以自然语言描述操作意图，你需要选择合适的工具执行，并用中文解释结果。
 
 注意事项：
-- 危险操作（关机、重启、清日志等）执行前必须先向用户确认
 - 需要参数但用户未提供的，请向用户询问
 - 操作结果用简洁中文回复
 - 如果工具返回错误信息，向用户解释错误原因并建议排查方向
+
+危险操作确认规则：
+- 以下操作属于危险操作，可能导致服务中断或数据丢失：
+  power_off（硬关机）、power_reset（硬重置）、power_cycle（电源循环）、sel_clear（清日志）
+- 当用户要求执行危险操作时，你不得直接调用工具，必须先回复确认请求
+- 确认请求格式："⚠ 即将执行【操作名】，此操作不可撤回，确认执行吗？"
+- 只有用户明确回复"确认"/"是"/"y"/"执行"后，才可调用对应工具
+- 用户拒绝或表示犹豫时，取消操作并告知已取消
 """
 
+# 摘要压缩用的 system prompt（单次调用，压缩旧对话为摘要）
+SUMMARY_PROMPT = """\
+请将以下对话历史压缩为一段简洁的摘要，保留关键信息：
+- 用户做了什么操作
+- 工具返回了什么重要结果
+- 用户当前关注的上下文
 
-def build_graph(llm, checkpointer=None):
+摘要用中文，控制在 200 字以内，不要包含系统指令内容。"""
+
+
+def _summarize_messages(llm, messages: list) -> str:
+    """使用 LLM 将旧消息压缩为摘要。
+
+    只在消息数量超过阈值时调用，代价是一次额外 LLM 请求。
+    压缩后旧消息被替换为一条摘要 SystemMessage，大幅减少 token 消耗。
+
+    Args:
+        llm: LangChain ChatModel 实例
+        messages: 需要压缩的旧消息列表
+
+    Returns:
+        str: 压缩后的摘要文本
+    """
+    # 构建摘要请求消息
+    content_parts = []
+    for msg in messages:
+        role = getattr(msg, "type", "unknown")
+        text = getattr(msg, "content", "")
+        if text:
+            content_parts.append(f"[{role}] {text[:500]}")  # 每条截断 500 字符
+
+    combined = "\n".join(content_parts)
+    if not combined.strip():
+        return ""
+
+    try:
+        response = llm.invoke([
+            SystemMessage(content=SUMMARY_PROMPT),
+            {"role": "user", "content": combined},
+        ])
+        return response.content
+    except Exception:
+        # 摘要失败不应阻塞主流程，返回简单截断
+        return "（早期对话因上下文管理已被截断）"
+
+
+def trim_messages(messages: list, llm=None, max_recent: int = 20,
+                  enable_summary: bool = True) -> list:
+    """上下文管理：滑动窗口 + 摘要压缩。
+
+    策略:
+        1. 消息数 <= max_recent → 直接返回，零开销
+        2. 消息数 > max_recent → 保留最近 N 条原文，旧消息压缩为摘要
+
+    为什么不直接截断旧消息:
+        直接截断会丢失上下文（如"帮我开机"后 LLM 不知道已执行过 power_status），
+        摘要压缩保留了关键语义，让 LLM 能理解之前的交互历史。
+
+    Args:
+        messages: 完整消息列表
+        llm: LangChain ChatModel（摘要压缩用，None 则只做滑动窗口）
+        max_recent: 保留最近 N 条消息原文
+        enable_summary: 是否启用 LLM 摘要压缩（False 则仅滑动窗口）
+
+    Returns:
+        list: 处理后的消息列表
+    """
+    if len(messages) <= max_recent:
+        return messages
+
+    recent = messages[-max_recent:]
+    older = messages[:-max_recent]
+
+    if not older:
+        return messages
+
+    # 生成摘要
+    summary_text = ""
+    if enable_summary and llm is not None:
+        summary_text = _summarize_messages(llm, older)
+
+    # 组合: [摘要] + [最近 N 条原文]
+    result = []
+    if summary_text:
+        result.append(SystemMessage(content=f"历史对话摘要:\n{summary_text}"))
+    result.extend(recent)
+
+    return result
+
+
+def build_graph(llm, checkpointer=None, context_cfg: dict = None):
     """构建 LangGraph 状态图。
 
     Args:
-        llm: LangChain ChatModel 实例（如 ChatOpenAI），需支持 tool calling
-        checkpointer: 可选的状态检查点存储器，传入后启用对话记忆功能。
-                      支持 SqliteSaver（持久化到磁盘）或 MemorySaver（内存）。
+        llm: LangChain ChatModel 实例，需支持 tool calling
+        checkpointer: 可选的状态检查点存储器
+        context_cfg: 上下文管理配置，如 {"max_recent_messages": 20, "enable_summary": True}
 
     Returns:
-        CompiledGraph: 编译后的 LangGraph 图，可调用 .invoke() 或 .stream()
-
-    使用示例:
-        from langchain_openai import ChatOpenAI
-        llm = ChatOpenAI(model="gpt-4", api_key="...", base_url="...")
-        graph = build_graph(llm)
-        result = graph.invoke(
-            {"messages": [HumanMessage(content="查看电源状态")]},
-            config={"configurable": {"thread_id": "user-123"}},
-        )
+        CompiledGraph: 编译后的 LangGraph 图
     """
-    # 将所有工具绑定到 LLM，使 LLM 能在回复中生成 tool_calls
+    # 上下文管理配置
+    max_recent = 20
+    enable_summary = True
+    if context_cfg:
+        max_recent = context_cfg.get("max_recent_messages", 20)
+        enable_summary = context_cfg.get("enable_summary", True)
+
+    # 将所有工具绑定到 LLM
     llm_with_tools = llm.bind_tools(ALL_TOOLS)
 
+    # LLM 调用最大重试次数
+    MAX_RETRIES = 3
+
     def agent_node(state: MessagesState):
-        """Agent 节点: 调用 LLM 进行推理。
+        """Agent 节点: 调用 LLM 进行推理，包含上下文管理和错误重试。
 
-        每次进入此节点时:
-            1. 将 SYSTEM_PROMPT + 历史消息传给 LLM
-            2. LLM 返回 AIMessage，可能包含 tool_calls
-            3. 返回新消息追加到状态中
-
-        Args:
-            state: 当前消息状态，包含所有历史消息
-
-        Returns:
-            dict: {"messages": [AIMessage]} 追加到消息列表
+        处理流程:
+            1. trim_messages() 管理上下文长度
+            2. 注入 SYSTEM_PROMPT
+            3. 调用 LLM，带指数退避重试
+            4. 网络/API 错误降级为友好提示消息
         """
-        # 每次调用都注入 system prompt，确保 LLM 角色一致
-        system_msg = {"role": "system", "content": SYSTEM_PROMPT}
-        messages = [system_msg] + state["messages"]
-        response = llm_with_tools.invoke(messages)
-        return {"messages": [response]}
+        # 上下文管理: 裁剪消息列表，防止 token 超限
+        messages = trim_messages(
+            state["messages"],
+            llm=llm if enable_summary else None,
+            max_recent=max_recent,
+            enable_summary=enable_summary,
+        )
 
-    # ToolNode 是 LangGraph 预构建的工具执行节点
-    # 它会自动解析 AIMessage.tool_calls，调用对应的 @tool 函数，
-    # 并将结果封装为 ToolMessage 返回
+        # 每次调用注入 system prompt
+        system_msg = {"role": "system", "content": SYSTEM_PROMPT}
+        full_messages = [system_msg] + messages
+
+        # 带重试的 LLM 调用
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = llm_with_tools.invoke(full_messages)
+                return {"messages": [response]}
+
+            except Exception as e:
+                error_name = type(e).__name__
+                error_msg = str(e)
+
+                # 限流错误 (429): 指数退避等待后重试
+                if "429" in error_msg or "rate" in error_name.lower() or "rate_limit" in error_name.lower():
+                    wait = min(2 ** attempt, 16)  # 1s, 2s, 4s, 最大 16s
+                    time.sleep(wait)
+                    continue
+
+                # 认证错误 (401/403): 不重试，直接返回
+                if "401" in error_msg or "403" in error_msg or "auth" in error_name.lower():
+                    return {"messages": [AIMessage(
+                        content="⚠ API 认证失败，请检查 config.yaml 中的 api_key 是否正确"
+                    )]}
+
+                # 网络错误: 不重试（可能持续断网）
+                if "connection" in error_name.lower() or "connect" in error_msg.lower():
+                    return {"messages": [AIMessage(
+                        content="⚠ API 连接失败，请检查网络连接和 base_url 配置"
+                    )]}
+
+                # 上下文超长 (400/token limit): 尝试更激进的裁剪
+                if "token" in error_msg.lower() or "context" in error_msg.lower() or "400" in error_msg:
+                    # 减半保留量后重试一次
+                    if attempt == 0:
+                        short_messages = trim_messages(
+                            state["messages"],
+                            llm=None,
+                            max_recent=max_recent // 2,
+                            enable_summary=False,
+                        )
+                        full_messages = [system_msg] + short_messages
+                        continue
+                    return {"messages": [AIMessage(
+                        content="⚠ 对话过长超出模型限制，请开启新会话继续"
+                    )]}
+
+                # 其他错误: 重试
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(1)
+                    continue
+
+                # 重试耗尽
+                return {"messages": [AIMessage(
+                    content=f"⚠ AI 服务异常 ({error_name}): {error_msg[:200]}"
+                )]}
+
+    # ToolNode: 自动解析 tool_calls 并执行
     tool_node = ToolNode(ALL_TOOLS)
 
     def should_continue(state: MessagesState):
-        """条件边: 判断 LLM 是否需要继续调用工具。
-
-        检查最后一条消息（AIMessage）是否包含 tool_calls:
-            - 有 tool_calls → 路由到 "tools" 节点执行工具
-            - 无 tool_calls → 路由到 END，返回最终回复
-
-        Args:
-            state: 当前消息状态
-
-        Returns:
-            str: "tools" 或 END
-        """
+        """条件边: 判断 LLM 是否需要继续调用工具。"""
         last_message = state["messages"][-1]
         if hasattr(last_message, "tool_calls") and last_message.tool_calls:
             return "tools"
@@ -127,21 +243,12 @@ def build_graph(llm, checkpointer=None):
 
     # ── 构建状态图 ──────────────────────────────────────────────────
     graph = StateGraph(MessagesState)
+    graph.add_node("agent", agent_node)
+    graph.add_node("tools", tool_node)
+    graph.add_edge(START, "agent")
+    graph.add_conditional_edges("agent", should_continue, {"tools": "tools", END: END})
+    graph.add_edge("tools", "agent")
 
-    # 添加节点
-    graph.add_node("agent", agent_node)    # LLM 推理节点
-    graph.add_node("tools", tool_node)      # 工具执行节点
-
-    # 定义边
-    graph.add_edge(START, "agent")          # 入口 → agent
-    graph.add_conditional_edges(            # agent → 条件判断 → tools 或 END
-        "agent",
-        should_continue,
-        {"tools": "tools", END: END},
-    )
-    graph.add_edge("tools", "agent")        # tools → agent（工具结果回到 LLM）
-
-    # 编译图，可选传入 checkpointer 启用记忆功能
     compile_kwargs = {}
     if checkpointer is not None:
         compile_kwargs["checkpointer"] = checkpointer

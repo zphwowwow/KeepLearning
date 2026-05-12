@@ -1,7 +1,7 @@
 # BMC 远程管理助手 - 配置文件
 
 bmc:
-  host: 10.8.148.12        # BMC 地址
+  host: 10.8.148.12         # BMC 地址
   username: Admin            # BMC 用户名
   password: Admin@8000       # 密码，留空则启动时交互输入
   interface: lanplus         # 接口类型: lan 或 lanplus
@@ -10,14 +10,30 @@ bmc:
   retries: 2                 # 重试次数
 
 llm:
-  api_key: "sk-jihhacbnfakipnratjwdhtcutnzfasheowrjclkzsilhxieh"                                    # 硅基流动 API Key（替换为你自己的）
-  base_url: "https://api.siliconflow.cn/v1"            # 硅基流动 API 地址
-  model: "Pro/zai-org/GLM-5.1"                    # 模型名称
+  api_key: "sk-jihhacbnfakipnratjwdhtcutnzfasheowrjclkzsilhxieh"  # 硅基流动 API Key
+  base_url: "https://api.siliconflow.cn/v1"                        # 硅基流动 API 地址
+  model: "Pro/zai-org/GLM-5.1"                                     # 模型名称
 
 server:
   host: "0.0.0.0"
   port: 8000
 
+# 对话记忆配置
 memory:
-  backend: sqlite
-  db_path: bmc_memory.db       # 记忆数据库路径
+  backend: sqlite                  # sqlite 或 redis
+  db_path: bmc_memory.db           # SQLite 数据库路径
+  redis_url: redis://localhost:6379/0  # Redis 连接地址（backend=redis 时使用）
+
+# 上下文管理配置
+context:
+  max_recent_messages: 20          # 保留最近 N 条消息原文
+  enable_summary: true             # 是否启用 LLM 摘要压缩旧对话
+
+# 危险操作确认配置
+danger:
+  confirm_required: true           # 是否启用前端确认弹窗
+  tools:                           # 危险工具列表
+    - power_off
+    - power_reset
+    - power_cycle
+    - sel_clear

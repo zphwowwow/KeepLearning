@@ -1,0 +1,30 @@
+# ============================================================
+# BMC 远程管理助手 — Redis 服务（可选）
+# ============================================================
+#
+# 启动: docker compose up -d redis
+# 停止: docker compose down
+# 查看状态: docker compose ps
+#
+# 启用 Redis 记忆后端:
+#   1. docker compose up -d redis
+#   2. 修改 config.yaml: memory.backend: redis
+#   3. pip install langgraph-checkpoint-redis redis
+#   4. 重启应用
+#
+# 数据持久化: 使用 Docker volume redis_data，容器重建后数据不丢失
+# ============================================================
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: bmc-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes   # 启用 AOF 持久化
+    restart: unless-stopped
+
+volumes:
+  redis_data:

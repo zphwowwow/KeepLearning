@@ -4,15 +4,23 @@
 #
 # 安装: pip install -r requirements.txt
 #
-# 依赖说明:
-#   langgraph                 LangGraph 框架，构建 Agent 状态图
+# 核心依赖:
+#   langgraph                     LangGraph 框架，构建 Agent 状态图
 #   langgraph-checkpoint-sqlite   SQLite 对话记忆持久化后端
-#   langchain-openai          LangChain OpenAI 兼容客户端（适配硅基流动 API）
-#   langchain-core            LangChain 核心（@tool 装饰器、消息类型等）
-#   fastapi                   Web 框架，提供 WebSocket + REST API
-#   uvicorn                   ASGI 服务器，运行 FastAPI 应用
-#   websockets                WebSocket 协议库
-#   pyyaml                    YAML 配置文件解析
+#   langchain-openai              LangChain OpenAI 兼容客户端（适配硅基流动 API）
+#   langchain-core                LangChain 核心
+#
+# Web 服务依赖:
+#   fastapi                       Web 框架，提供 WebSocket + REST API
+#   uvicorn                       ASGI 服务器
+#   websockets                    WebSocket 协议库
+#
+# 配置依赖:
+#   pyyaml                        YAML 配置文件解析
+#
+# 可选依赖（Redis 记忆后端）:
+#   langgraph-checkpoint-redis    Redis 对话记忆持久化后端
+#   redis                         Redis Python 客户端
 # ============================================================
 
 langgraph>=0.4
@@ -23,3 +31,6 @@ fastapi>=0.115
 uvicorn>=0.30
 websockets>=13.0
 pyyaml>=6.0
+# Redis 后端（可选，取消注释启用）:
+# langgraph-checkpoint-redis>=2.0
+# redis>=5.0
